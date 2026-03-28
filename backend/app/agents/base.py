@@ -49,16 +49,16 @@ def get_llm():
 
 # Prompt injection patterns — broader coverage than single regex
 _INJECTION_PATTERNS = [
-    r"(?i)(ignore|forget|disregard|override|bypass)\s+(all\s+)?(previous|above|prior|earlier|system)\s+(instructions?|prompts?|rules?|context)",
-    r"(?i)new\s+(task|instructions?|role|system\s+prompt)\s*:",
-    r"(?i)\[?(SYSTEM|ADMIN|ROOT|DEVELOPER)\]?\s*:",
-    r"(?i)you\s+are\s+now\s+a?\s*",
-    r"(?i)act\s+as\s+(if\s+)?(you\s+are\s+)?a?\s*(different|new)",
-    r"(?i)pretend\s+(you|that|to\s+be)",
-    r"(?i)output\s+(the\s+)?(system|original|full)\s+prompt",
-    r"(?i)reveal\s+(your|the)\s+(instructions?|prompt|rules?)",
+    r"(ignore|forget|disregard|override|bypass)\s+(all\s+)?(previous|above|prior|earlier|system)\s+(instructions?|prompts?|rules?|context)",
+    r"new\s+(task|instructions?|role|system\s+prompt)\s*:",
+    r"\[?(SYSTEM|ADMIN|ROOT|DEVELOPER)\]?\s*:",
+    r"you\s+are\s+now\s+a?\s*",
+    r"act\s+as\s+(if\s+)?(you\s+are\s+)?a?\s*(different|new)",
+    r"pretend\s+(you|that|to\s+be)",
+    r"output\s+(the\s+)?(system|original|full)\s+prompt",
+    r"reveal\s+(your|the)\s+(instructions?|prompt|rules?)",
 ]
-_INJECTION_RE = re.compile("|".join(_INJECTION_PATTERNS))
+_INJECTION_RE = re.compile("|".join(_INJECTION_PATTERNS), re.IGNORECASE)
 
 
 def sanitize_input(text: str, max_length: int = 500) -> str:
