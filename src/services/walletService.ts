@@ -3,6 +3,7 @@ import {
   Web3MobileWallet,
 } from "@solana-mobile/mobile-wallet-adapter-protocol-web3js";
 import { Connection, PublicKey, clusterApiUrl } from "@solana/web3.js";
+import { Buffer } from "buffer";
 import { SOLANA_RPC_ENDPOINT, SOLANA_CLUSTER } from "../config/constants";
 
 const APP_IDENTITY = {
@@ -10,6 +11,27 @@ const APP_IDENTITY = {
   uri: "https://warfield2016.github.io/seeker-copilot/",
   icon: "favicon.ico",
 };
+
+/**
+ * Decode a base64-encoded address from MWA into a base58 PublicKey string.
+ * MWA returns addresses as Base64EncodedAddress, not base58.
+ */
+function decodeAddress(base64Address: string): string {
+  try {
+    const bytes = Buffer.from(base64Address, "base64");
+    const pubkey = new PublicKey(bytes);
+    return pubkey.toBase58();
+  } catch {
+    // If it's already base58 (some wallet adapters), return as-is
+    try {
+      new PublicKey(base64Address);
+      return base64Address;
+    } catch {
+      console.error("Failed to decode wallet address:", base64Address);
+      return base64Address;
+    }
+  }
+}
 
 class WalletService {
   private connection: Connection;
@@ -40,9 +62,11 @@ class WalletService {
       };
     });
 
-    this.authorizedAddress = authResult.address;
+    // MWA returns base64-encoded addresses — decode to base58
+    this.authorizedAddress = decodeAddress(authResult.address);
     this.authToken = authResult.authToken;
-    return authResult.address;
+    console.log("Wallet connected:", this.authorizedAddress);
+    return this.authorizedAddress;
   }
 
   async disconnect(): Promise<void> {
