@@ -16,7 +16,10 @@ export const SKR_STAKE_PRO_THRESHOLD = 200; // 200 SKR staked for Pro tier
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:8000";
 export const HELIUS_API_URL = "https://api.helius.xyz/v0";
 export const BIRDEYE_API_URL = "https://public-api.birdeye.so";
+export const BIRDEYE_API_KEY = process.env.EXPO_PUBLIC_BIRDEYE_KEY || "";
 export const JUPITER_PRICE_API = "https://price.jup.ag/v6/price";
+export const JUPITER_TOKEN_API = "https://api.jup.ag/tokens/v2";
+export const COINGECKO_API = "https://api.coingecko.com/api/v3";
 
 // Free tier limits
 export const FREE_QUERIES_PER_DAY = 3;

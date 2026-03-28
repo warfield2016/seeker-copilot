@@ -1,6 +1,7 @@
 import { Connection, PublicKey } from "@solana/web3.js";
 import { TokenBalance, DeFiPosition, NFTHolding, Portfolio, RiskScore } from "../types";
 import { JUPITER_PRICE_API, SKR_MINT, SOLANA_RPC_ENDPOINT } from "../config/constants";
+import { enrichWith24hChanges } from "./priceService";
 
 const FETCH_TIMEOUT_MS = 15000;
 const STABLECOINS = new Set(["USDC", "USDT", "PYUSD", "DAI", "USDD", "TUSD", "FRAX", "USDH", "UXD"]);
@@ -157,23 +158,16 @@ class PortfolioService {
       }
     }
 
-    // Enrich 24h price changes via Jupiter for tokens that have a price
-    const mintsWithPrice = tokens
-      .filter((t) => t.mint !== SOL_MINT && t.priceUsd > 0)
-      .map((t) => t.mint)
-      .slice(0, 100); // Jupiter accepts up to 100
-
-    if (mintsWithPrice.length > 0) {
-      const jupiterData = await this.fetchJupiterPrices(mintsWithPrice);
+    // Fill in missing prices via Jupiter for tokens DAS didn't price
+    const missingPriceTokens = tokens.filter((t) => t.mint !== SOL_MINT && t.priceUsd === 0);
+    if (missingPriceTokens.length > 0) {
+      const mints = missingPriceTokens.map((t) => t.mint).slice(0, 100);
+      const jupiterData = await this.fetchJupiterPrices(mints);
       for (const token of tokens) {
         const jup = jupiterData.get(token.mint);
-        if (jup) {
-          // If DAS had no price but Jupiter does, use Jupiter
-          if (token.priceUsd === 0 && jup.price > 0) {
-            token.priceUsd = jup.price;
-            token.usdValue = token.balance * jup.price;
-          }
-          token.change24h = jup.change24h;
+        if (jup && token.priceUsd === 0 && jup.price > 0) {
+          token.priceUsd = jup.price;
+          token.usdValue = token.balance * jup.price;
         }
       }
     }
@@ -184,6 +178,10 @@ class PortfolioService {
     );
 
     filteredTokens.sort((a, b) => b.usdValue - a.usdValue);
+
+    // Enrich 24h price changes via Birdeye (if key set) or CoinGecko fallback
+    await enrichWith24hChanges(filteredTokens);
+
     return { tokens: filteredTokens, nfts };
   }
 
