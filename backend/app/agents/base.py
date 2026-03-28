@@ -10,7 +10,6 @@ from langchain_core.messages import SystemMessage, HumanMessage
 
 logger = logging.getLogger(__name__)
 
-# Cache the LLM instance across agents (same config, no need to create multiple)
 _llm_instance = None
 
 
@@ -48,24 +47,46 @@ def get_llm():
     return _llm_instance
 
 
+# Prompt injection patterns — broader coverage than single regex
+_INJECTION_PATTERNS = [
+    r"(?i)(ignore|forget|disregard|override|bypass)\s+(all\s+)?(previous|above|prior|earlier|system)\s+(instructions?|prompts?|rules?|context)",
+    r"(?i)new\s+(task|instructions?|role|system\s+prompt)\s*:",
+    r"(?i)\[?(SYSTEM|ADMIN|ROOT|DEVELOPER)\]?\s*:",
+    r"(?i)you\s+are\s+now\s+a?\s*",
+    r"(?i)act\s+as\s+(if\s+)?(you\s+are\s+)?a?\s*(different|new)",
+    r"(?i)pretend\s+(you|that|to\s+be)",
+    r"(?i)output\s+(the\s+)?(system|original|full)\s+prompt",
+    r"(?i)reveal\s+(your|the)\s+(instructions?|prompt|rules?)",
+]
+_INJECTION_RE = re.compile("|".join(_INJECTION_PATTERNS))
+
+
 def sanitize_input(text: str, max_length: int = 500) -> str:
     """Sanitize user input to reduce prompt injection risk."""
-    text = re.sub(
-        r"(?i)(ignore|forget|disregard)\s+(all\s+)?(previous|above|prior)\s+(instructions?|prompts?|rules?)",
-        "[filtered]", text
-    )
-    return text[:max_length]
+    # Truncate first to bound attacker's payload
+    text = text[:max_length]
+    # Filter known injection patterns
+    text = _INJECTION_RE.sub("[filtered]", text)
+    # Escape double quotes to prevent prompt delimiter breakout
+    text = text.replace('"', "'")
+    return text
+
+
+def sanitize_field(value: str, max_length: int = 50) -> str:
+    """Sanitize a data field (protocol name, token symbol, etc.) for LLM context.
+    Strips anything that could be interpreted as an instruction."""
+    # Allow only alphanumeric, spaces, hyphens, dots, slashes
+    cleaned = re.sub(r"[^a-zA-Z0-9\s\-./]", "", value)
+    return cleaned[:max_length]
 
 
 def parse_json_from_llm(content: str, fallback=None):
     """Robustly extract JSON from LLM response text."""
-    # Direct parse
     try:
         return json.loads(content)
     except json.JSONDecodeError:
         pass
 
-    # Extract JSON array or object from mixed text
     for open_char, close_char in [("[", "]"), ("{", "}")]:
         try:
             start = content.find(open_char)

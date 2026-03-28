@@ -17,18 +17,20 @@ const APP_IDENTITY = {
  * MWA returns addresses as Base64EncodedAddress, not base58.
  */
 function decodeAddress(base64Address: string): string {
+  // Try base64 → bytes → PublicKey (MWA standard)
   try {
     const bytes = Buffer.from(base64Address, "base64");
     const pubkey = new PublicKey(bytes);
     return pubkey.toBase58();
   } catch {
-    // If it's already base58 (some wallet adapters), return as-is
+    // Fallback: already base58 (some wallet adapters)
     try {
       new PublicKey(base64Address);
       return base64Address;
     } catch {
-      console.error("Failed to decode wallet address:", base64Address);
-      return base64Address;
+      throw new Error(
+        "Unable to decode wallet address from MWA response. Please try reconnecting."
+      );
     }
   }
 }
@@ -56,6 +58,9 @@ class WalletService {
         cluster: SOLANA_CLUSTER,
         identity: APP_IDENTITY,
       });
+      if (!auth.accounts || auth.accounts.length === 0) {
+        throw new Error("No accounts returned from wallet. Please try again.");
+      }
       return {
         address: auth.accounts[0].address,
         authToken: auth.auth_token,

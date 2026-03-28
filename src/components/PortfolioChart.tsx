@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { COLORS } from "../config/constants";
 
@@ -75,7 +75,7 @@ function Sparkline({ data, width, height, color }: { data: number[]; width: numb
 
 export default function PortfolioChart({ currentValue, change24hPercent }: Props) {
   const [period, setPeriod] = useState<Period>("7D");
-  const data = generateHistory(currentValue, change24hPercent, period);
+  const data = useMemo(() => generateHistory(currentValue, change24hPercent, period), [currentValue, change24hPercent, period]);
   const values = data.map((d) => d.value);
   const periodChange = values.length > 1 ? ((values[values.length - 1] - values[0]) / values[0]) * 100 : 0;
   const isUp = periodChange >= 0;

@@ -3,8 +3,10 @@
 export const APP_NAME = "Seeker AI Copilot";
 export const APP_VERSION = "0.1.0";
 
-// Solana configuration
-export const SOLANA_RPC_ENDPOINT = "https://mainnet.helius-rpc.com/?api-key=YOUR_HELIUS_KEY";
+// Solana configuration — Helius RPC key via env var, never hardcoded
+export const SOLANA_RPC_ENDPOINT =
+  process.env.EXPO_PUBLIC_HELIUS_RPC_URL ||
+  "https://mainnet.helius-rpc.com/?api-key=YOUR_HELIUS_KEY";
 export const SOLANA_CLUSTER = "mainnet-beta";
 
 // SKR Token
@@ -17,6 +19,7 @@ export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost
 export const HELIUS_API_URL = "https://api.helius.xyz/v0";
 export const BIRDEYE_API_URL = "https://public-api.birdeye.so";
 export const BIRDEYE_API_KEY = process.env.EXPO_PUBLIC_BIRDEYE_KEY || "";
+// Jupiter APIs (auth-gated since 2025 — kept for reference, not actively used)
 export const JUPITER_PRICE_API = "https://price.jup.ag/v6/price";
 export const JUPITER_TOKEN_API = "https://api.jup.ag/tokens/v2";
 export const COINGECKO_API = "https://api.coingecko.com/api/v3";

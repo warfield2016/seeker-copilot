@@ -26,20 +26,23 @@ export default function ConnectScreen({ onConnected }: Props) {
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    Animated.stagger(150, [
+    const stagger = Animated.stagger(150, [
       Animated.spring(logoAnim, { toValue: 1, useNativeDriver: true, tension: 50, friction: 7 }),
       Animated.spring(titleAnim, { toValue: 1, useNativeDriver: true, tension: 50, friction: 7 }),
       Animated.spring(featuresAnim, { toValue: 1, useNativeDriver: true, tension: 50, friction: 7 }),
       Animated.spring(buttonAnim, { toValue: 1, useNativeDriver: true, tension: 50, friction: 7 }),
-    ]).start();
+    ]);
+    stagger.start();
 
-    // Subtle pulse on logo
-    Animated.loop(
+    const pulse = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, { toValue: 1.05, duration: 2000, useNativeDriver: true }),
         Animated.timing(pulseAnim, { toValue: 1, duration: 2000, useNativeDriver: true }),
       ])
-    ).start();
+    );
+    pulse.start();
+
+    return () => { stagger.stop(); pulse.stop(); };
   }, []);
 
   const handleConnect = async () => {

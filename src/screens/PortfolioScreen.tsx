@@ -28,14 +28,13 @@ export default function PortfolioScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchPortfolio = useCallback(async (aborted = false) => {
+  const fetchPortfolio = useCallback(async (ctrl: { aborted: boolean }) => {
     try {
       const isWeb = Platform.OS === "web";
       let data: Portfolio;
       let risk: RiskScore;
 
       if (isWeb || !walletService.isConnected()) {
-        // Demo mode for web / grant presentations
         data = { ...DEMO_PORTFOLIO, lastUpdated: new Date() };
         risk = DEMO_RISK;
       } else {
@@ -44,32 +43,33 @@ export default function PortfolioScreen() {
         risk = svc.calculateRiskScore(data.tokens, data.defiPositions);
       }
 
+      if (ctrl.aborted) return;
       setPortfolio(data);
       setRiskScore(risk);
       setProtocolSafety(DEMO_SECURITY);
 
-      // Fetch AI summary in background (guarded by abort flag)
-      if (!aborted) {
-        aiService.getPortfolioSummary(data).then((s) => { if (!aborted) setSummary(s); }).catch(() => {});
-      }
+      // Fetch AI summary in background
+      aiService.getPortfolioSummary(data)
+        .then((s) => { if (!ctrl.aborted) setSummary(s); })
+        .catch(() => {});
     } catch (err) {
-      // Fallback to demo
+      if (ctrl.aborted) return;
       setPortfolio({ ...DEMO_PORTFOLIO, lastUpdated: new Date() });
       setRiskScore(DEMO_RISK);
     } finally {
-      setLoading(false);
+      if (!ctrl.aborted) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    let aborted = false;
-    fetchPortfolio(aborted);
-    return () => { aborted = true; };
+    const ctrl = { aborted: false };
+    fetchPortfolio(ctrl);
+    return () => { ctrl.aborted = true; };
   }, [fetchPortfolio]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchPortfolio();
+    await fetchPortfolio({ aborted: false });
     setRefreshing(false);
   }, [fetchPortfolio]);
 

@@ -17,20 +17,27 @@ export default function AIScreen() {
   });
 
   useEffect(() => {
+    let aborted = false;
     const load = async () => {
       let data: Portfolio;
       if (Platform.OS === "web" || !walletService.isConnected()) {
         data = DEMO_PORTFOLIO;
       } else {
-        const svc = new PortfolioService(walletService.getConnection());
-        data = await svc.getPortfolio(walletService.getAddress()!);
+        try {
+          const svc = new PortfolioService(walletService.getConnection());
+          data = await svc.getPortfolio(walletService.getAddress()!);
+        } catch {
+          data = DEMO_PORTFOLIO;
+        }
       }
+      if (aborted) return;
       setPortfolio(data);
       const isPro = data.skrStaked >= SKR_STAKE_PRO_THRESHOLD;
       const qpd = isPro ? PRO_QUERIES_PER_DAY : FREE_QUERIES_PER_DAY;
       setUserTier({ level: isPro ? "pro" : "free", skrStaked: data.skrStaked, queriesRemaining: qpd, queriesPerDay: qpd });
     };
     load();
+    return () => { aborted = true; };
   }, []);
 
   return (

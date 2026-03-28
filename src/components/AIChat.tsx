@@ -64,7 +64,7 @@ export default function AIChat({ portfolio, userTier, onQueryUsed }: Props) {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View style={styles.header}>
         <Text style={styles.title}>AI Copilot</Text>

@@ -23,7 +23,7 @@ _CACHE_TTL_SECONDS = 300
 
 def _cache_get(key: str):
     entry = _cache.get(key)
-    if entry and (datetime.utcnow() - entry["ts"]).seconds < _CACHE_TTL_SECONDS:
+    if entry and (datetime.utcnow() - entry["ts"]).total_seconds() < _CACHE_TTL_SECONDS:
         return entry["data"]
     return None
 

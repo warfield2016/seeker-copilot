@@ -9,7 +9,7 @@ import os
 import json
 import logging
 import httpx
-from app.agents.base import invoke_agent, parse_json_from_llm
+from app.agents.base import invoke_agent, parse_json_from_llm, sanitize_field
 
 logger = logging.getLogger(__name__)
 
@@ -150,10 +150,14 @@ class SecurityAuditor:
             else:
                 unknown_protocols.append(pos)
 
-        # LLM analysis for unknown protocols
+        # LLM analysis for unknown protocols (sanitize names to prevent prompt injection)
         if unknown_protocols:
             try:
-                proto_str = json.dumps(unknown_protocols, indent=2)
+                sanitized_protos = [
+                    {**p, "protocol": sanitize_field(p.get("protocol", ""), 50)}
+                    for p in unknown_protocols
+                ]
+                proto_str = json.dumps(sanitized_protos, indent=2)
                 response = await invoke_agent(
                     SECURITY_PROMPT,
                     f"Assess these Solana DeFi protocols:\n{proto_str}",
