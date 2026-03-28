@@ -21,8 +21,8 @@ export const JUPITER_PRICE_API = "https://price.jup.ag/v6/price";
 export const JUPITER_TOKEN_API = "https://api.jup.ag/tokens/v2";
 export const COINGECKO_API = "https://api.coingecko.com/api/v3";
 
-// Free tier limits
-export const FREE_QUERIES_PER_DAY = 3;
+// Query limits per day
+export const FREE_QUERIES_PER_DAY = 20;
 export const PRO_QUERIES_PER_DAY = 100;
 
 // UI

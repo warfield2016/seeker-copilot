@@ -68,9 +68,9 @@ export default function AIChat({ portfolio, userTier, onQueryUsed }: Props) {
     >
       <View style={styles.header}>
         <Text style={styles.title}>AI Copilot</Text>
-        <Text style={styles.queries}>
+        <Text style={[styles.queries, userTier.queriesRemaining <= 3 && { color: COLORS.warning }]}>
           {userTier.queriesRemaining}/{userTier.queriesPerDay} queries
-          {userTier.level === "free" ? " (Free)" : " (Pro)"}
+          {userTier.level === "pro" ? " (Pro)" : ""}
         </Text>
       </View>
 
@@ -117,7 +117,7 @@ export default function AIChat({ portfolio, userTier, onQueryUsed }: Props) {
           placeholder={
             canQuery
               ? "Ask about your portfolio..."
-              : "Daily limit reached. Stake SKR for Pro."
+              : "Daily limit reached. Stake 200 SKR for 100/day."
           }
           placeholderTextColor={COLORS.textSecondary}
           editable={canQuery && !loading}
