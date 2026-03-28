@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seeker Copilot — Portfolio Intelligence for Solana Mobile</title>
+  <meta name="description" content="Open-source portfolio intelligence built for the Solana Seeker phone. See your positions clearly. Understand your risk. Make better decisions.">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #111118;
+      --border: #1a1a2e;
+      --purple: #9945FF;
+      --green: #14F195;
+      --text: #e8e8ef;
+      --dim: #6b6b7b;
+      --glow: rgba(153, 69, 255, 0.15);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, sans-serif;
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    /* Scanline overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.03) 2px,
+        rgba(0, 0, 0, 0.03) 4px
+      );
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Header */
+    header {
+      padding: 80px 0 40px;
+      text-align: center;
+      position: relative;
+    }
+
+    .tag {
+      display: inline-block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--green);
+      border: 1px solid var(--green);
+      padding: 4px 14px;
+      border-radius: 2px;
+      margin-bottom: 24px;
+      opacity: 0.8;
+    }
+
+    h1 {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(28px, 5vw, 42px);
+      font-weight: 800;
+      letter-spacing: -1px;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, var(--text) 0%, var(--purple) 50%, var(--green) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      font-size: 17px;
+      color: var(--dim);
+      max-width: 520px;
+      margin: 0 auto;
+      line-height: 1.8;
+    }
+
+    /* Divider */
+    .divider {
+      border: none;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border), transparent);
+      margin: 48px 0;
+    }
+
+    /* Sections */
+    section {
+      padding: 24px 0;
+    }
+
+    h2 {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--purple);
+      margin-bottom: 20px;
+    }
+
+    p {
+      color: var(--dim);
+      font-size: 15px;
+      margin-bottom: 16px;
+    }
+
+    p strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    /* Manifest block */
+    .manifest {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--purple);
+      padding: 28px 24px;
+      border-radius: 4px;
+      margin: 32px 0;
+      position: relative;
+    }
+
+    .manifest::before {
+      content: '>';
+      position: absolute;
+      top: 28px;
+      left: -16px;
+      color: var(--purple);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .manifest p {
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1.9;
+    }
+
+    /* Feature grid */
+    .features {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 24px 0;
+    }
+
+    @media (max-width: 500px) {
+      .features { grid-template-columns: 1fr; }
+    }
+
+    .feature {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 20px;
+      border-radius: 4px;
+      transition: border-color 0.3s;
+    }
+
+    .feature:hover {
+      border-color: var(--purple);
+    }
+
+    .feature-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--green);
+      margin-bottom: 8px;
+    }
+
+    .feature p {
+      font-size: 13px;
+      margin: 0;
+      line-height: 1.6;
+    }
+
+    /* Terminal block */
+    .terminal {
+      background: #000;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 20px;
+      margin: 24px 0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      overflow-x: auto;
+    }
+
+    .terminal .prompt {
+      color: var(--green);
+    }
+
+    .terminal .cmd {
+      color: var(--text);
+    }
+
+    .terminal .comment {
+      color: #444;
+    }
+
+    .terminal .output {
+      color: var(--dim);
+    }
+
+    .terminal div {
+      margin-bottom: 4px;
+    }
+
+    /* Values list */
+    .values {
+      list-style: none;
+      padding: 0;
+    }
+
+    .values li {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+      color: var(--dim);
+      font-size: 15px;
+      display: flex;
+      gap: 12px;
+      align-items: baseline;
+    }
+
+    .values li:last-child {
+      border-bottom: none;
+    }
+
+    .values .marker {
+      color: var(--purple);
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 800;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    /* Footer */
+    footer {
+      padding: 48px 0 80px;
+      text-align: center;
+      border-top: 1px solid var(--border);
+      margin-top: 48px;
+    }
+
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .footer-links a {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--dim);
+      text-decoration: none;
+      letter-spacing: 1px;
+      transition: color 0.3s;
+    }
+
+    .footer-links a:hover {
+      color: var(--green);
+    }
+
+    .footer-note {
+      font-size: 12px;
+      color: #333;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Ambient glow */
+    .glow-orb {
+      position: fixed;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--glow) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .glow-1 { top: -200px; left: -200px; }
+    .glow-2 { bottom: -200px; right: -200px; background: radial-gradient(circle, rgba(20, 241, 149, 0.06) 0%, transparent 70%); }
+
+    /* Status badge */
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--green);
+      margin-top: 32px;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(20, 241, 149, 0.4); }
+      50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(20, 241, 149, 0); }
+    }
+
+    /* Roadmap */
+    .roadmap-item {
+      display: flex;
+      gap: 16px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .roadmap-item:last-child { border-bottom: none; }
+
+    .roadmap-phase {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--purple);
+      font-weight: 700;
+      min-width: 44px;
+      padding-top: 2px;
+    }
+
+    .roadmap-item p {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    .roadmap-done {
+      color: var(--green);
+    }
+  </style>
+</head>
+<body>
+  <div class="glow-orb glow-1"></div>
+  <div class="glow-orb glow-2"></div>
+
+  <div class="container">
+    <header>
+      <div class="tag">Built for Solana Seeker</div>
+      <h1>Seeker Copilot</h1>
+      <p class="subtitle">
+        Portfolio intelligence that runs on your phone, reads your positions through Seed Vault, and tells you what actually matters. No noise. No fluff. Just signal.
+      </p>
+      <div class="status">
+        <span class="status-dot"></span>
+        v1 in development
+      </div>
+    </header>
+
+    <hr class="divider">
+
+    <section>
+      <h2>Why This Exists</h2>
+
+      <div class="manifest">
+        <p>
+          150,000 Seeker phones shipped. Hundreds of thousands of people holding tokens, staking SOL, providing liquidity on Jupiter and Drift and Kamino. And not a single app on the device that helps them understand what they actually own.
+        </p>
+      </div>
+
+      <p>
+        I built this because I needed it myself. I was checking three different websites to understand my own portfolio. Copying wallet addresses between tabs. Doing mental math on concentration risk. Wondering if the protocol I was lending on had ever been audited.
+      </p>
+
+      <p>
+        <strong>That's a broken experience.</strong> The Seeker phone has Seed Vault — the most secure way to interact with Solana — but there's nothing sitting on top of it that actually helps you think about your positions.
+      </p>
+
+      <p>
+        Seeker Copilot fixes that. It reads your on-chain positions through Seed Vault, runs the numbers, and gives you a clear picture: what you hold, what's at risk, what's trending, and what the protocols you're trusting actually look like from a security standpoint.
+      </p>
+    </section>
+
+    <hr class="divider">
+
+    <section>
+      <h2>What It Does</h2>
+
+      <div class="features">
+        <div class="feature">
+          <div class="feature-title">Portfolio View</div>
+          <p>All your tokens, DeFi positions, staked SOL, and LP positions in one screen. Real-time USD values. 24h changes. No tab switching.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-title">Risk Scoring</div>
+          <p>Quantitative risk breakdown: concentration, volatility exposure, impermanent loss, liquidation proximity. Numbers, not vibes.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-title">Protocol Safety</div>
+          <p>Every DeFi protocol in your portfolio gets a safety score. Audit status, incident history, maturity. Know what you're trusting.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-title">Market Signals</div>
+          <p>Trending narratives, momentum shifts, and opportunities you're missing. Positioned for what's happening now, not last month.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-title">Trade Signals</div>
+          <p>Actionable recommendations with confidence scores. Rebalance suggestions grounded in your actual risk profile, not generic advice.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-title">Seed Vault Native</div>
+          <p>Built on Mobile Wallet Adapter. Your keys never leave the secure enclave. View-only portfolio reading. Zero custody risk.</p>
+        </div>
+      </div>
+    </section>
+
+    <hr class="divider">
+
+    <section>
+      <h2>The Vision</h2>
+
+      <p>
+        <strong>The Solana ecosystem has world-class infrastructure but a gap in intelligence.</strong> Jupiter aggregates swaps. Drift runs perps. Kamino optimizes yields. But nobody is helping the human at the end of the chain make sense of it all.
+      </p>
+
+      <p>
+        I want Seeker Copilot to be the layer that sits between you and the complexity. Not a trading bot. Not a yield chaser. A tool that helps you <strong>see clearly</strong> — so you can make decisions with your own brain, armed with the right data.
+      </p>
+
+      <p>
+        The long-term goal is an intelligence layer for every Seeker user — from the DeFi power user in Lagos running a five-figure portfolio across eight protocols, to someone in Ho Chi Minh City who just bought their first SOL and doesn't know what staking means yet.
+      </p>
+
+      <p>
+        <strong>Both of them deserve to understand what they own.</strong>
+      </p>
+    </section>
+
+    <hr class="divider">
+
+    <section>
+      <h2>For the Ecosystem</h2>
+
+      <ul class="values">
+        <li>
+          <span class="marker">//</span>
+          <span><strong>Seeker-first.</strong> This isn't a web app crammed into a phone. It's built for the 6.36" screen, for touch, for the device you carry every day. Seed Vault integration from day one.</span>
+        </li>
+        <li>
+          <span class="marker">//</span>
+          <span><strong>SKR-native.</strong> Stake SKR to unlock the full analysis suite. The token isn't bolted on — it's the access mechanism. Holding and staking SKR is how you get the best experience.</span>
+        </li>
+        <li>
+          <span class="marker">//</span>
+          <span><strong>Growing the community.</strong> Every user who understands their portfolio better is a user who stays. Better tools make better participants. Better participants make a stronger ecosystem.</span>
+        </li>
+        <li>
+          <span class="marker">//</span>
+          <span><strong>Open source.</strong> The analysis engine, the risk models, the protocol safety database — all open. Fork it. Improve it. Build on it. The ecosystem wins when tools are shared.</span>
+        </li>
+      </ul>
+    </section>
+
+    <hr class="divider">
+
+    <section>
+      <h2>Roadmap</h2>
+
+      <div class="roadmap-item">
+        <span class="roadmap-phase roadmap-done">Done</span>
+        <p><strong>Core portfolio dashboard</strong> — token holdings, DeFi positions, risk scoring, real-time prices</p>
+      </div>
+      <div class="roadmap-item">
+        <span class="roadmap-phase roadmap-done">Done</span>
+        <p><strong>Intelligence engine</strong> — analysis pipeline covering risk scoring, trend detection, protocol safety, and trade signals</p>
+      </div>
+      <div class="roadmap-item">
+        <span class="roadmap-phase">Next</span>
+        <p><strong>Seeker device deployment</strong> — native APK for Solana dApp Store, Seed Vault wallet integration</p>
+      </div>
+      <div class="roadmap-item">
+        <span class="roadmap-phase">Soon</span>
+        <p><strong>Live on-chain data</strong> — Helius RPC integration for real-time position tracking across Jupiter, Drift, Kamino, Marinade</p>
+      </div>
+      <div class="roadmap-item">
+        <span class="roadmap-phase">Q3</span>
+        <p><strong>SKR staking + Pro tier</strong> — stake SKR for advanced analytics, custom alerts, multi-wallet support</p>
+      </div>
+      <div class="roadmap-item">
+        <span class="roadmap-phase">Q4</span>
+        <p><strong>Historical tracking</strong> — portfolio performance over time, PnL attribution, tax-ready export</p>
+      </div>
+    </section>
+
+    <hr class="divider">
+
+    <section>
+      <h2>Stack</h2>
+
+      <div class="terminal">
+        <div><span class="comment"># frontend</span></div>
+        <div><span class="prompt">$</span> <span class="cmd">react-native + expo + mobile-wallet-adapter</span></div>
+        <div><span class="comment"># backend</span></div>
+        <div><span class="prompt">$</span> <span class="cmd">python + fastapi</span></div>
+        <div><span class="comment"># chain</span></div>
+        <div><span class="prompt">$</span> <span class="cmd">solana/web3.js + helius + birdeye</span></div>
+        <div><span class="comment"># device</span></div>
+        <div><span class="prompt">$</span> <span class="cmd">solana seeker + seed vault</span></div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="footer-links">
+        <a href="https://github.com/warfield">GitHub</a>
+        <a href="https://solanamobile.com">Solana Mobile</a>
+        <a href="mailto:warfield2016@gmail.com">Contact</a>
+      </div>
+      <p class="footer-note">Built with conviction. Shipped from the trenches.</p>
+    </footer>
+  </div>
+</body>
+</html>
