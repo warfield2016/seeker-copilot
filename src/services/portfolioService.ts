@@ -1,19 +1,43 @@
 import { Connection, PublicKey } from "@solana/web3.js";
-import { TokenBalance, DeFiPosition, Portfolio, RiskScore } from "../types";
-import { JUPITER_PRICE_API, SKR_MINT } from "../config/constants";
+import { TokenBalance, DeFiPosition, NFTHolding, Portfolio, RiskScore } from "../types";
+import { JUPITER_PRICE_API, SKR_MINT, SOLANA_RPC_ENDPOINT } from "../config/constants";
 
-const FETCH_TIMEOUT_MS = 10000;
-const STABLECOINS = new Set(["USDC", "USDT", "PYUSD", "DAI", "USDD", "TUSD", "FRAX"]);
+const FETCH_TIMEOUT_MS = 15000;
+const STABLECOINS = new Set(["USDC", "USDT", "PYUSD", "DAI", "USDD", "TUSD", "FRAX", "USDH", "UXD"]);
+const SOL_MINT = "So11111111111111111111111111111111111111112";
+const SOL_LOGO = "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png";
+// Minimum USD value to show a token — filters out spam/dust
+const MIN_TOKEN_VALUE_USD = 0.01;
 
 /** Fetch with timeout using AbortController */
-async function fetchWithTimeout(url: string, timeoutMs = FETCH_TIMEOUT_MS): Promise<Response> {
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit = {},
+  timeoutMs = FETCH_TIMEOUT_MS
+): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    return await fetch(url, { signal: controller.signal });
+    return await fetch(url, { ...options, signal: controller.signal });
   } finally {
     clearTimeout(timer);
   }
+}
+
+/** Make a Helius DAS JSON-RPC call */
+async function heliusRpc(method: string, params: unknown): Promise<unknown> {
+  const response = await fetchWithTimeout(
+    SOLANA_RPC_ENDPOINT,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: "seeker-copilot", method, params }),
+    }
+  );
+  if (!response.ok) throw new Error(`Helius RPC error: ${response.status}`);
+  const json = await response.json() as { result?: unknown; error?: { message: string } };
+  if (json.error) throw new Error(`Helius RPC: ${json.error.message}`);
+  return json.result;
 }
 
 class PortfolioService {
@@ -24,142 +48,178 @@ class PortfolioService {
   }
 
   /**
-   * Fetch all token balances for a wallet
+   * Fetch all assets (tokens + NFTs) via Helius DAS getAssetsByOwner.
+   * Single call replaces: getParsedTokenAccountsByOwner + batch Jupiter prices.
+   * Returns tokens with real logos, symbols, prices. Also separates out NFTs.
    */
-  async getTokenBalances(walletAddress: string): Promise<TokenBalance[]> {
-    try {
-      const pubkey = new PublicKey(walletAddress);
+  async getAssets(walletAddress: string): Promise<{
+    tokens: TokenBalance[];
+    nfts: NFTHolding[];
+  }> {
+    const result = await heliusRpc("getAssetsByOwner", {
+      ownerAddress: walletAddress,
+      page: 1,
+      limit: 1000,
+      displayOptions: {
+        showFungible: true,
+        showNativeBalance: true,
+        showUnverifiedCollections: false,
+        showCollectionMetadata: false,
+        showInscription: false,
+      },
+    }) as {
+      items: DasAsset[];
+      nativeBalance?: { lamports: number; price_per_sol?: number; total_price?: number };
+      total: number;
+    };
 
-      // Get SOL balance
-      const solBalance = await this.connection.getBalance(pubkey);
+    const tokens: TokenBalance[] = [];
+    const nfts: NFTHolding[] = [];
 
-      // Get SPL token accounts
-      const tokenAccounts = await this.connection.getParsedTokenAccountsByOwner(
-        pubkey,
-        { programId: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA") }
-      );
+    // SOL native balance
+    const lamports = result.nativeBalance?.lamports ?? 0;
+    const solPrice = result.nativeBalance?.price_per_sol ?? 0;
+    const solBalance = lamports / 1e9;
+    tokens.push({
+      mint: SOL_MINT,
+      symbol: "SOL",
+      name: "Solana",
+      balance: solBalance,
+      decimals: 9,
+      usdValue: result.nativeBalance?.total_price ?? solBalance * solPrice,
+      priceUsd: solPrice,
+      change24h: 0,
+      logoUri: SOL_LOGO,
+    });
 
-      const tokens: TokenBalance[] = [];
+    // Collect mints that have no price data for Jupiter fallback
+    const missingPriceMints: string[] = [];
 
-      // Add SOL
-      const solPriceData = await this.fetchTokenPrice("So11111111111111111111111111111111111111112");
-      const solPrice = solPriceData?.price ?? 0;
-      tokens.push({
-        mint: "So11111111111111111111111111111111111111112",
-        symbol: "SOL",
-        name: "Solana",
-        balance: solBalance / 1e9,
-        decimals: 9,
-        usdValue: (solBalance / 1e9) * solPrice,
-        priceUsd: solPrice,
-        change24h: solPriceData?.change24h ?? 0,
-        logoUri: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png",
-      });
+    for (const asset of result.items) {
+      const iface = asset.interface ?? "";
 
-      // Process SPL tokens
-      const mints: string[] = [];
-      const balanceMap = new Map<string, { balance: number; decimals: number }>();
+      // --- Fungible tokens ---
+      if (iface === "FungibleToken" || iface === "FungibleAsset") {
+        const info = asset.token_info;
+        if (!info) continue;
 
-      for (const account of tokenAccounts.value) {
-        const parsed = account.account.data.parsed?.info;
-        if (!parsed) continue;
+        const decimals = info.decimals ?? 0;
+        const rawBalance = Number(info.balance ?? 0);
+        const balance = rawBalance / Math.pow(10, decimals);
+        if (balance <= 0) continue;
 
-        const mint = parsed.mint;
-        const uiAmount = parsed.tokenAmount?.uiAmount;
-        const decimals = parsed.tokenAmount?.decimals;
+        const priceInfo = info.price_info;
+        const priceUsd = priceInfo?.price_per_token ?? 0;
+        const usdValue = priceInfo?.total_price ?? balance * priceUsd;
 
-        if (typeof uiAmount !== "number" || typeof decimals !== "number") continue;
-        if (uiAmount <= 0) continue;
+        if (usdValue < MIN_TOKEN_VALUE_USD && priceUsd === 0) {
+          // Track for Jupiter price fallback
+          missingPriceMints.push(asset.id);
+        }
 
-        mints.push(mint);
-        balanceMap.set(mint, { balance: uiAmount, decimals });
+        const symbol =
+          info.symbol ||
+          asset.content?.metadata?.symbol ||
+          asset.id.slice(0, 6);
+        const name =
+          asset.content?.metadata?.name ||
+          symbol;
+        const logoUri =
+          asset.content?.links?.image ||
+          asset.content?.files?.[0]?.uri;
+
+        tokens.push({
+          mint: asset.id,
+          symbol,
+          name,
+          balance,
+          decimals,
+          usdValue,
+          priceUsd,
+          change24h: 0, // DAS doesn't return 24h change — enriched below
+          logoUri,
+        });
+
+      // --- NFTs ---
+      } else if (
+        iface === "V1_NFT" ||
+        iface === "V2_NFT" ||
+        iface === "ProgrammableNFT" ||
+        iface === "LEGACY_NFT"
+      ) {
+        nfts.push({
+          mint: asset.id,
+          name: asset.content?.metadata?.name ?? "Unknown NFT",
+          collection: asset.grouping?.find((g) => g.group_key === "collection")?.group_value,
+          imageUri: asset.content?.links?.image ?? asset.content?.files?.[0]?.uri,
+          estimatedValueUsd: undefined,
+        });
       }
+    }
 
-      // Batch fetch prices
-      if (mints.length > 0) {
-        const prices = await this.fetchTokenPrices(mints);
-        for (const [mint, data] of balanceMap) {
-          const priceData = prices.get(mint);
-          const price = priceData?.price ?? 0;
-          if (price < 0) continue; // Skip negative prices from bad API data
+    // Enrich 24h price changes via Jupiter for tokens that have a price
+    const mintsWithPrice = tokens
+      .filter((t) => t.mint !== SOL_MINT && t.priceUsd > 0)
+      .map((t) => t.mint)
+      .slice(0, 100); // Jupiter accepts up to 100
 
-          tokens.push({
-            mint,
-            symbol: priceData?.symbol ?? mint.slice(0, 6),
-            name: priceData?.name ?? "Unknown Token",
-            balance: data.balance,
-            decimals: data.decimals,
-            usdValue: data.balance * price,
-            priceUsd: price,
-            change24h: priceData?.change24h ?? 0,
-            logoUri: priceData?.logoUri,
-          });
+    if (mintsWithPrice.length > 0) {
+      const jupiterData = await this.fetchJupiterPrices(mintsWithPrice);
+      for (const token of tokens) {
+        const jup = jupiterData.get(token.mint);
+        if (jup) {
+          // If DAS had no price but Jupiter does, use Jupiter
+          if (token.priceUsd === 0 && jup.price > 0) {
+            token.priceUsd = jup.price;
+            token.usdValue = token.balance * jup.price;
+          }
+          token.change24h = jup.change24h;
         }
       }
-
-      tokens.sort((a, b) => b.usdValue - a.usdValue);
-      return tokens;
-    } catch (error) {
-      console.error("Failed to fetch token balances:", error);
-      // Return SOL with zero balance so user sees something
-      return [{
-        mint: "So11111111111111111111111111111111111111112",
-        symbol: "SOL",
-        name: "Solana",
-        balance: 0,
-        decimals: 9,
-        usdValue: 0,
-        priceUsd: 0,
-        change24h: 0,
-        logoUri: "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png",
-      }];
     }
+
+    // Filter out pure dust (no value, no known price)
+    const filteredTokens = tokens.filter(
+      (t) => t.mint === SOL_MINT || t.usdValue >= MIN_TOKEN_VALUE_USD || t.priceUsd > 0
+    );
+
+    filteredTokens.sort((a, b) => b.usdValue - a.usdValue);
+    return { tokens: filteredTokens, nfts };
   }
 
   /**
-   * Fetch price for a single token via Jupiter Price API
+   * Fetch token balances (legacy path — uses DAS internally now)
    */
-  private async fetchTokenPrice(
-    mint: string
-  ): Promise<{ price: number; change24h: number } | null> {
-    try {
-      const response = await fetchWithTimeout(`${JUPITER_PRICE_API}?ids=${mint}`);
-      if (!response.ok) return null;
-      const data = await response.json();
-      const tokenData = data.data?.[mint];
-      if (!tokenData || typeof tokenData.price !== "number") return null;
-      return { price: tokenData.price, change24h: 0 };
-    } catch {
-      return null;
-    }
+  async getTokenBalances(walletAddress: string): Promise<TokenBalance[]> {
+    const { tokens } = await this.getAssets(walletAddress);
+    return tokens;
   }
 
   /**
-   * Batch fetch prices for multiple tokens
+   * Fetch price changes from Jupiter (DAS doesn't provide 24h change)
+   * Jupiter v6 price API: https://price.jup.ag/v6/price?ids=...&vsToken=USDC
    */
-  private async fetchTokenPrices(
+  private async fetchJupiterPrices(
     mints: string[]
-  ): Promise<Map<string, { price: number; change24h: number; symbol?: string; name?: string; logoUri?: string }>> {
-    const result = new Map<string, { price: number; change24h: number; symbol?: string; name?: string; logoUri?: string }>();
+  ): Promise<Map<string, { price: number; change24h: number }>> {
+    const result = new Map<string, { price: number; change24h: number }>();
     try {
       const ids = mints.join(",");
-      const response = await fetchWithTimeout(`${JUPITER_PRICE_API}?ids=${ids}`);
+      const response = await fetchWithTimeout(`${JUPITER_PRICE_API}?ids=${ids}`, {}, 8000);
       if (!response.ok) return result;
-      const data = await response.json();
+      const data = await response.json() as { data?: Record<string, { price: number; extraInfo?: { lastSwappedPrice?: { lastJupiterSellAt?: number } } }> };
 
       for (const mint of mints) {
         const tokenData = data.data?.[mint];
-        if (tokenData && typeof tokenData.price === "number") {
+        if (tokenData && typeof tokenData.price === "number" && tokenData.price >= 0) {
           result.set(mint, {
             price: tokenData.price,
-            change24h: 0,
-            symbol: tokenData.mintSymbol,
-            name: tokenData.mintSymbol,
+            change24h: 0, // Jupiter v6 price API doesn't return 24h change
           });
         }
       }
     } catch (error) {
-      console.error("Failed to batch fetch prices:", error);
+      console.warn("Jupiter price fetch failed (non-fatal):", error);
     }
     return result;
   }
@@ -201,7 +261,7 @@ class PortfolioService {
 
     // Volatility: % of token value NOT in stablecoins
     const stableValue = tokens
-      .filter((t) => STABLECOINS.has(t.symbol))
+      .filter((t) => STABLECOINS.has(t.symbol.toUpperCase()))
       .reduce((sum, t) => sum + t.usdValue, 0);
     const volatilityExposure = tokenValue > 0
       ? Math.round(((tokenValue - stableValue) / tokenValue) * 100)
@@ -247,10 +307,10 @@ class PortfolioService {
   }
 
   /**
-   * Build complete portfolio snapshot
+   * Build complete portfolio snapshot using Helius DAS API
    */
   async getPortfolio(walletAddress: string): Promise<Portfolio> {
-    const tokens = await this.getTokenBalances(walletAddress);
+    const { tokens, nfts } = await this.getAssets(walletAddress);
     const skrToken = tokens.find((t) => t.mint === SKR_MINT);
     const defiPositions: DeFiPosition[] = [];
 
@@ -264,9 +324,9 @@ class PortfolioService {
     );
     const change24hPercent = totalValueUsd > 0 ? (change24hUsd / totalValueUsd) * 100 : 0;
 
-    const stakedTokens = ["JitoSOL", "mSOL", "bSOL", "stSOL"];
+    const stakedTokenSymbols = ["JitoSOL", "mSOL", "bSOL", "stSOL", "jitoSOL"];
     const stakedSolValue = tokens
-      .filter((t) => stakedTokens.includes(t.symbol))
+      .filter((t) => stakedTokenSymbols.includes(t.symbol))
       .reduce((sum, t) => sum + t.usdValue, 0);
 
     return {
@@ -276,7 +336,7 @@ class PortfolioService {
       change24hPercent,
       tokens,
       defiPositions,
-      nfts: [],
+      nfts,
       stakedSol: 0,
       stakedSolValueUsd: stakedSolValue,
       skrBalance: skrToken?.balance ?? 0,
@@ -284,6 +344,36 @@ class PortfolioService {
       lastUpdated: new Date(),
     };
   }
+}
+
+// --- DAS API Type Definitions ---
+
+interface DasAsset {
+  id: string;
+  interface?: string;
+  token_info?: {
+    symbol?: string;
+    balance?: string | number;
+    decimals?: number;
+    price_info?: {
+      price_per_token?: number;
+      total_price?: number;
+      currency?: string;
+    };
+  };
+  content?: {
+    metadata?: {
+      name?: string;
+      symbol?: string;
+      description?: string;
+    };
+    links?: {
+      image?: string;
+    };
+    files?: Array<{ uri?: string; cdn_uri?: string; mime?: string }>;
+  };
+  grouping?: Array<{ group_key: string; group_value: string }>;
+  compression?: { compressed: boolean };
 }
 
 export default PortfolioService;

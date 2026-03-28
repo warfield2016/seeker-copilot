@@ -186,6 +186,28 @@ export default function PortfolioScreen() {
         </View>
       </View>
 
+      {/* NFT Count */}
+      {portfolio.nfts.length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>NFTs ({portfolio.nfts.length})</Text>
+          <View style={styles.nftRow}>
+            {portfolio.nfts.slice(0, 6).map((nft) => (
+              <View key={nft.mint} style={styles.nftCard}>
+                <Text style={styles.nftName} numberOfLines={1}>{nft.name}</Text>
+                {nft.collection && (
+                  <Text style={styles.nftCollection} numberOfLines={1}>{nft.collection.slice(0, 8)}...</Text>
+                )}
+              </View>
+            ))}
+            {portfolio.nfts.length > 6 && (
+              <View style={styles.nftCard}>
+                <Text style={styles.nftMore}>+{portfolio.nfts.length - 6} more</Text>
+              </View>
+            )}
+          </View>
+        </View>
+      )}
+
       {/* Share Card */}
       <ShareCard portfolio={portfolio} riskScore={riskScore} />
 
@@ -261,4 +283,16 @@ const styles = StyleSheet.create({
   safetyBadgeText: { fontSize: 10, fontWeight: "800" },
   walletAddr: { color: COLORS.textSecondary, fontSize: 12, marginTop: 6, fontFamily: "Courier" },
   lastUpdated: { color: COLORS.textSecondary, fontSize: 12, textAlign: "center", paddingVertical: 24 },
+  nftRow: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 16, gap: 8 },
+  nftCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 10,
+    padding: 10,
+    minWidth: 90,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  nftName: { color: COLORS.text, fontSize: 11, fontWeight: "600" },
+  nftCollection: { color: COLORS.textSecondary, fontSize: 10, marginTop: 2 },
+  nftMore: { color: COLORS.primary, fontSize: 11, fontWeight: "700" },
 });
