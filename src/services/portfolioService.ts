@@ -1,6 +1,6 @@
 import { Connection, PublicKey } from "@solana/web3.js";
 import { TokenBalance, DeFiPosition, NFTHolding, Portfolio, RiskScore } from "../types";
-import { JUPITER_PRICE_API, SKR_MINT, SOLANA_RPC_ENDPOINT } from "../config/constants";
+import { SKR_MINT, SOLANA_RPC_ENDPOINT } from "../config/constants";
 import { enrichWith24hChanges } from "./priceService";
 
 const FETCH_TIMEOUT_MS = 15000;
@@ -158,28 +158,15 @@ class PortfolioService {
       }
     }
 
-    // Fill in missing prices via Jupiter for tokens DAS didn't price
-    const missingPriceTokens = tokens.filter((t) => t.mint !== SOL_MINT && t.priceUsd === 0);
-    if (missingPriceTokens.length > 0) {
-      const mints = missingPriceTokens.map((t) => t.mint).slice(0, 100);
-      const jupiterData = await this.fetchJupiterPrices(mints);
-      for (const token of tokens) {
-        const jup = jupiterData.get(token.mint);
-        if (jup && token.priceUsd === 0 && jup.price > 0) {
-          token.priceUsd = jup.price;
-          token.usdValue = token.balance * jup.price;
-        }
-      }
-    }
-
-    // Filter out pure dust (no value, no known price)
+    // Filter out pure dust (no value, no known price from DAS)
     const filteredTokens = tokens.filter(
       (t) => t.mint === SOL_MINT || t.usdValue >= MIN_TOKEN_VALUE_USD || t.priceUsd > 0
     );
 
     filteredTokens.sort((a, b) => b.usdValue - a.usdValue);
 
-    // Enrich 24h price changes via Birdeye (if key set) or CoinGecko fallback
+    // Enrich with prices + 24h changes via Birdeye (key set) or CoinGecko (free fallback).
+    // Also fills in missing prices for tokens DAS didn't price.
     await enrichWith24hChanges(filteredTokens);
 
     return { tokens: filteredTokens, nfts };
@@ -191,35 +178,6 @@ class PortfolioService {
   async getTokenBalances(walletAddress: string): Promise<TokenBalance[]> {
     const { tokens } = await this.getAssets(walletAddress);
     return tokens;
-  }
-
-  /**
-   * Fetch price changes from Jupiter (DAS doesn't provide 24h change)
-   * Jupiter v6 price API: https://price.jup.ag/v6/price?ids=...&vsToken=USDC
-   */
-  private async fetchJupiterPrices(
-    mints: string[]
-  ): Promise<Map<string, { price: number; change24h: number }>> {
-    const result = new Map<string, { price: number; change24h: number }>();
-    try {
-      const ids = mints.join(",");
-      const response = await fetchWithTimeout(`${JUPITER_PRICE_API}?ids=${ids}`, {}, 8000);
-      if (!response.ok) return result;
-      const data = await response.json() as { data?: Record<string, { price: number; extraInfo?: { lastSwappedPrice?: { lastJupiterSellAt?: number } } }> };
-
-      for (const mint of mints) {
-        const tokenData = data.data?.[mint];
-        if (tokenData && typeof tokenData.price === "number" && tokenData.price >= 0) {
-          result.set(mint, {
-            price: tokenData.price,
-            change24h: 0, // Jupiter v6 price API doesn't return 24h change
-          });
-        }
-      }
-    } catch (error) {
-      console.warn("Jupiter price fetch failed (non-fatal):", error);
-    }
-    return result;
   }
 
   /**

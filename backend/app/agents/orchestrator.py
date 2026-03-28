@@ -49,14 +49,19 @@ class Orchestrator:
         start = time.time()
         errors = []
 
-        # Phase 1: Run Risk + Trend + Security in PARALLEL
-        risk_task = asyncio.create_task(self._safe_run("risk", _risk.analyze(tokens, defi_positions)))
-        trend_task = asyncio.create_task(self._safe_run("trend", _trend.analyze(tokens, defi_positions)))
-        security_task = asyncio.create_task(self._safe_run("security", _security.audit_positions(defi_positions)))
+        # Phase 1: Run Risk + Trend + Security + Token Security Check in PARALLEL
+        risk_task      = asyncio.create_task(self._safe_run("risk",     _risk.analyze(tokens, defi_positions)))
+        trend_task     = asyncio.create_task(self._safe_run("trend",    _trend.analyze(tokens, defi_positions)))
+        security_task  = asyncio.create_task(self._safe_run("security", _security.audit_positions(defi_positions)))
+        token_sec_task = asyncio.create_task(self._safe_run("token_security", _security.check_token_security(tokens)))
 
-        risk_result, trend_result, security_result = await asyncio.gather(
-            risk_task, trend_task, security_task
+        risk_result, trend_result, security_result, token_security = await asyncio.gather(
+            risk_task, trend_task, security_task, token_sec_task
         )
+
+        # Merge token security flags into the security results
+        if token_security:
+            security_result = (security_result or []) + token_security
 
         # Collect errors
         if risk_result is None:
