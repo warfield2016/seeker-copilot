@@ -78,6 +78,18 @@ export default function RiskGauge({ riskScore }: Props) {
         <RiskItem label="Liquidation" value={riskScore.liquidationRisk} />
       </View>
 
+      {/* Risk explanation */}
+      <View style={styles.explanationBox}>
+        <Text style={styles.explanationTitle}>What this means</Text>
+        {riskScore.overall < 30 ? (
+          <Text style={styles.explanationText}>Your portfolio has low overall risk. Well-diversified with stable exposure.</Text>
+        ) : riskScore.overall < 60 ? (
+          <Text style={styles.explanationText}>Moderate risk. Consider diversifying if concentration is high, or adding stablecoins to reduce volatility.</Text>
+        ) : (
+          <Text style={styles.explanationText}>High risk detected. Your portfolio may be heavily concentrated or exposed to volatile assets. Consider rebalancing.</Text>
+        )}
+      </View>
+
       {riskScore.details ? (
         <Text style={styles.details}>{riskScore.details}</Text>
       ) : null}
@@ -85,8 +97,22 @@ export default function RiskGauge({ riskScore }: Props) {
   );
 }
 
+function getRiskSeverity(value: number): string {
+  if (value < 30) return "Low";
+  if (value < 60) return "Med";
+  return "High";
+}
+
+const RISK_EXPLANATIONS: Record<string, string> = {
+  Concentration: "Portfolio weight in a single asset",
+  Volatility: "Exposure to non-stablecoin assets",
+  "IL Risk": "Value in liquidity pools (impermanent loss)",
+  Liquidation: "Borrow position health proximity",
+};
+
 function RiskItem({ label, value }: { label: string; value: number }) {
   const color = getRiskColor(value);
+  const severity = getRiskSeverity(value);
   return (
     <View style={styles.riskItem}>
       <Text style={styles.riskLabel}>{label}</Text>
@@ -94,6 +120,7 @@ function RiskItem({ label, value }: { label: string; value: number }) {
         <View style={[styles.riskDot, { backgroundColor: color }]} />
         <Text style={[styles.riskValue, { color }]}>{value}</Text>
       </View>
+      <Text style={[styles.riskSeverity, { color }]}>{severity}</Text>
     </View>
   );
 }
@@ -211,6 +238,32 @@ const styles = StyleSheet.create({
   riskValue: {
     fontSize: 16,
     fontWeight: "700",
+  },
+  riskSeverity: {
+    fontSize: 9,
+    fontWeight: "600",
+    marginTop: 1,
+    letterSpacing: 0.3,
+  },
+  explanationBox: {
+    backgroundColor: COLORS.surfaceLight,
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  explanationTitle: {
+    color: COLORS.textSecondary,
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+    marginBottom: 4,
+    textTransform: "uppercase",
+  },
+  explanationText: {
+    color: COLORS.text,
+    fontSize: 12,
+    lineHeight: 17,
   },
   details: {
     color: COLORS.textSecondary,

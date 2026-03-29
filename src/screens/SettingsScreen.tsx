@@ -14,13 +14,15 @@ import { COLORS, APP_NAME, APP_VERSION, FREE_QUERIES_PER_DAY, PRO_QUERIES_PER_DA
 const DISCLAIMER_KEY = "@seeker_copilot_disclaimer_v1";
 
 const LINKS = {
-  privacy: "https://seekeraiapp.com/privacy",
-  terms: "https://seekeraiapp.com/terms",
+  privacy: "https://docs.solanamobile.com/dapp-publishing/tou",
+  terms: "https://docs.solanamobile.com/dapp-publishing/agreement",
   eula: "https://docs.solanamobile.com/dapp-publishing/dapp-store-sample-eula",
   github: "https://github.com/warfield2016/seeker-ai-copilot",
-  support: "mailto:support@seekeraiapp.com",
-  helius: "https://helius.xyz",
+  support: "mailto:warfield2016@gmail.com",
+  helius: "https://helius.dev",
   solana: "https://solana.com",
+  solanaMobile: "https://solanamobile.com",
+  stakeSkr: "https://stake.solanamobile.com",
 };
 
 function openLink(url: string) {
@@ -118,7 +120,7 @@ export default function SettingsScreen() {
           icon="⬡"
           label="Unlock Pro"
           sublabel={`Stake ${SKR_STAKE_PRO_THRESHOLD} SKR tokens to upgrade`}
-          onPress={() => openLink("https://solanamonile.com")}
+          onPress={() => openLink(LINKS.stakeSkr)}
         />
       </View>
 

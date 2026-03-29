@@ -10,6 +10,33 @@ class AIService {
 
   constructor() {
     this.baseUrl = API_BASE_URL;
+    console.log("[AIService] Backend URL:", this.baseUrl);
+  }
+
+  /** Fetch with retry and timeout */
+  private async fetchWithRetry(
+    url: string,
+    options: RequestInit,
+    { retries = 2, timeoutMs = 45000 } = {}
+  ): Promise<Response> {
+    let lastError: Error | null = null;
+    for (let i = 0; i <= retries; i++) {
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        const response = await fetch(url, { ...options, signal: controller.signal });
+        clearTimeout(timer);
+        return response;
+      } catch (err: any) {
+        lastError = err;
+        if (i < retries) {
+          const wait = 1000 * (i + 1);
+          console.warn(`[AIService] Retry ${i + 1}/${retries} in ${wait}ms:`, err.message);
+          await new Promise((r) => setTimeout(r, wait));
+        }
+      }
+    }
+    throw lastError ?? new Error("Fetch failed");
   }
 
   /**
@@ -17,7 +44,7 @@ class AIService {
    */
   async getPortfolioSummary(portfolio: Portfolio): Promise<string> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/ai/summary`, {
+      const response = await this.fetchWithRetry(`${this.baseUrl}/api/ai/summary`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -57,7 +84,7 @@ class AIService {
    */
   async askQuestion(portfolio: Portfolio, question: string): Promise<AIQuery> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/ai/ask`, {
+      const response = await this.fetchWithRetry(`${this.baseUrl}/api/ai/ask`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -84,12 +111,15 @@ class AIService {
         timestamp: new Date(),
         type: data.type ?? "general",
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error("AI question failed:", error);
+      const msg = error?.name === "AbortError"
+        ? "Request timed out. The AI service is taking too long — try a simpler question."
+        : `Unable to reach the AI service (${this.baseUrl}). Check your connection and try again.`;
       return {
         id: Date.now().toString(),
         question,
-        response: "Unable to reach the AI service. Please check your connection and try again.",
+        response: msg,
         timestamp: new Date(),
         type: "general",
       };
@@ -101,7 +131,7 @@ class AIService {
    */
   async getRecommendations(portfolio: Portfolio): Promise<TradeRecommendation[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/ai/recommendations`, {
+      const response = await this.fetchWithRetry(`${this.baseUrl}/api/ai/recommendations`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -138,7 +168,7 @@ class AIService {
    */
   async getDeepAnalysis(portfolio: Portfolio): Promise<DeepAnalysis | null> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/ai/deep-analysis`, {
+      const response = await this.fetchWithRetry(`${this.baseUrl}/api/ai/deep-analysis`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

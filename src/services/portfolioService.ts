@@ -367,12 +367,12 @@ class PortfolioService {
     const stakedPositions = detectStakedPositions(tokens);
     enrichWithLiveAPY(stakedPositions).catch(() => {}); // fire-and-forget APY enrichment
 
-    // Fix: Only count staked SKR that is ACTUALLY in the staking program
-    // (separate from liquid SKR in wallet). If staked amount equals wallet
-    // balance, the tokens are liquid — not staked.
+    // SKR staking is delegation-based: tokens stay in wallet when staked.
+    // The staking program creates separate accounts to track staked amounts.
+    // Always trust the staking program result — if getProgramAccounts found
+    // staking accounts, those tokens ARE staked regardless of wallet balance.
     const liquidSkrBalance = skrToken?.balance ?? 0;
-    const actualStakedSkr = (stakedSkr > 0 && stakedSkr !== liquidSkrBalance) ? stakedSkr : 0;
-    const stakedSkrValueUsd = actualStakedSkr * skrPrice;
+    const stakedSkrValueUsd = stakedSkr * skrPrice;
 
     // Token value already includes LSTs (they have prices from DAS/Birdeye)
     // No double-counting: LSTs stay in tokens, staked section is UI-only annotation
@@ -401,7 +401,7 @@ class PortfolioService {
       stakedSol: 0,
       stakedSolValueUsd: stakedSolValue,
       skrBalance: liquidSkrBalance,
-      skrStaked: actualStakedSkr,
+      skrStaked: stakedSkr,
       stakedPositions,
       lastUpdated: new Date(),
     };

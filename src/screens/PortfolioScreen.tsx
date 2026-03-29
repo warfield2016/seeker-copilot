@@ -5,9 +5,11 @@ import {
   ScrollView,
   RefreshControl,
   StyleSheet,
-  ActivityIndicator,
   Platform,
+  TouchableOpacity,
+  Alert,
 } from "react-native";
+import * as Clipboard from "expo-clipboard";
 import { COLORS } from "../config/constants";
 import { Portfolio, RiskScore } from "../types";
 import TokenRow from "../components/TokenRow";
@@ -100,11 +102,18 @@ export default function PortfolioScreen() {
           </Text>
         </Text>
         {portfolio.walletAddress && portfolio.walletAddress !== "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU" && (
-          <View style={styles.walletBadge}>
+          <TouchableOpacity
+            style={styles.walletBadge}
+            onPress={async () => {
+              await Clipboard.setStringAsync(portfolio.walletAddress);
+              Alert.alert("Copied", "Wallet address copied to clipboard");
+            }}
+            activeOpacity={0.7}
+          >
             <Text style={styles.walletAddr}>
-              {portfolio.walletAddress.slice(0, 4)}...{portfolio.walletAddress.slice(-4)}
+              {portfolio.walletAddress.slice(0, 6)}...{portfolio.walletAddress.slice(-4)} 📋
             </Text>
-          </View>
+          </TouchableOpacity>
         )}
       </View>
 
@@ -125,7 +134,7 @@ export default function PortfolioScreen() {
       )}
 
       {/* Portfolio Chart */}
-      <PortfolioChart currentValue={portfolio.totalValueUsd} change24hPercent={portfolio.change24hPercent} />
+      <PortfolioChart currentValue={portfolio.totalValueUsd} change24hPercent={portfolio.change24hPercent} tokens={portfolio.tokens} />
 
       {/* SKR Banner */}
       {portfolio.skrBalance > 0 && (
@@ -133,12 +142,21 @@ export default function PortfolioScreen() {
           <View>
             <Text style={styles.skrLabel}>SKR</Text>
             <Text style={styles.skrBalance}>{portfolio.skrBalance.toLocaleString()}</Text>
+            <Text style={styles.skrSublabel}>Liquid balance</Text>
           </View>
           <View style={styles.skrRight}>
-            <Text style={styles.skrStakedLabel}>{portfolio.skrStaked > 0 ? "Staked" : "Not staked"}</Text>
-            <Text style={styles.skrStakedValue}>
-              {portfolio.skrStaked > 0 ? portfolio.skrStaked.toLocaleString() : "Stake for Pro"}
-            </Text>
+            {portfolio.skrStaked > 0 ? (
+              <>
+                <Text style={styles.skrStakedValue}>{portfolio.skrStaked.toLocaleString()}</Text>
+                <Text style={styles.skrStakedLabel}>Staked</Text>
+                <Text style={styles.skrApr}>~19.4% APR</Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.skrStakedLabel}>Not staked</Text>
+                <Text style={styles.skrStakedCta}>Stake for Pro</Text>
+              </>
+            )}
           </View>
         </View>
       )}
@@ -312,8 +330,11 @@ const styles = StyleSheet.create({
   skrLabel: { color: COLORS.skr, fontWeight: "700", fontSize: 14 },
   skrBalance: { color: COLORS.text, fontWeight: "800", fontSize: 22 },
   skrRight: { alignItems: "flex-end" },
-  skrStakedLabel: { color: COLORS.textSecondary, fontSize: 12 },
-  skrStakedValue: { color: COLORS.secondary, fontWeight: "700", fontSize: 16 },
+  skrSublabel: { color: COLORS.textMuted, fontSize: 10, marginTop: 2 },
+  skrStakedLabel: { color: COLORS.textSecondary, fontSize: 11 },
+  skrStakedValue: { color: COLORS.secondary, fontWeight: "800", fontSize: 20 },
+  skrApr: { color: COLORS.success, fontSize: 11, fontWeight: "700", marginTop: 2 },
+  skrStakedCta: { color: COLORS.primary, fontSize: 13, fontWeight: "700", marginTop: 2 },
   section: { marginTop: 16 },
   sectionTitle: {
     color: COLORS.textSecondary,
