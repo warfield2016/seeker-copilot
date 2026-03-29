@@ -57,8 +57,8 @@ export default function AIChat({ portfolio, userTier, onQueryUsed }: Props) {
   const suggestedQuestions = [
     "What's my biggest risk right now?",
     "Should I rebalance my portfolio?",
-    "How diversified am I?",
-    "What's my best performing asset?",
+    "Which staking protocol has the best yield?",
+    "Analyze my SOL concentration risk",
   ];
 
   return (
@@ -92,6 +92,13 @@ export default function AIChat({ portfolio, userTier, onQueryUsed }: Props) {
         keyExtractor={(item) => item.id}
         inverted
         style={styles.messageList}
+        ListHeaderComponent={loading ? (
+          <View style={styles.typingIndicator}>
+            <View style={styles.aiMessage}>
+              <Text style={styles.typingDots}>Analyzing portfolio...</Text>
+            </View>
+          </View>
+        ) : null}
         renderItem={({ item }) => (
           <View style={styles.messagePair}>
             <View style={styles.userMessage}>
@@ -173,7 +180,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: COLORS.glow,
   },
   suggestionText: {
     color: COLORS.primary,
@@ -199,6 +206,14 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontSize: 14,
   },
+  typingIndicator: {
+    marginVertical: 8,
+  },
+  typingDots: {
+    color: COLORS.accent,
+    fontSize: 13,
+    fontStyle: "italic",
+  },
   aiMessage: {
     alignSelf: "flex-start",
     backgroundColor: COLORS.surface,
@@ -206,6 +221,8 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 4,
     padding: 12,
     maxWidth: "90%",
+    borderWidth: 1,
+    borderColor: COLORS.glow,
   },
   aiText: {
     color: COLORS.text,
