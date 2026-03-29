@@ -7,6 +7,8 @@ const FETCH_TIMEOUT_MS = 15000;
 const STABLECOINS = new Set(["USDC", "USDT", "PYUSD", "DAI", "USDD", "TUSD", "FRAX", "USDH", "UXD"]);
 const SOL_MINT = "So11111111111111111111111111111111111111112";
 const SOL_LOGO = "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png";
+// SKR staking program — https://x.com/solanamobile/status/2013796419778511231
+const SKR_STAKING_PROGRAM = "SKRskrmtL83pcL4YqLWt6iPefDqwXQWHSw9S9vz94BZ";
 // Minimum USD value to show a token — filters out spam/dust
 const MIN_TOKEN_VALUE_USD = 0.01;
 
@@ -263,16 +265,107 @@ class PortfolioService {
   }
 
   /**
+   * Fetch staked SKR amount from the SKR staking program.
+   * Queries getProgramAccounts with wallet as authority filter.
+   * Returns staked SKR amount (in UI units, 9 decimals).
+   */
+  async getStakedSkr(walletAddress: string): Promise<number> {
+    try {
+      const programId = new PublicKey(SKR_STAKING_PROGRAM);
+      const walletPubkey = new PublicKey(walletAddress);
+
+      // Query staking program for accounts owned by this wallet
+      // The authority/owner is typically at byte offset 8 (after discriminator)
+      const accounts = await this.connection.getProgramAccounts(programId, {
+        filters: [
+          { memcmp: { offset: 8, bytes: walletPubkey.toBase58() } },
+        ],
+        dataSlice: { offset: 0, length: 0 }, // We just need to know if accounts exist
+      });
+
+      if (accounts.length === 0) {
+        // Try offset 32 (some programs put owner after a different header)
+        const accounts2 = await this.connection.getProgramAccounts(programId, {
+          filters: [
+            { memcmp: { offset: 32, bytes: walletPubkey.toBase58() } },
+          ],
+        });
+
+        if (accounts2.length === 0) return 0;
+
+        // Parse staked amount from account data
+        // SKR has 9 decimals. Staked amount is typically a u64 in the account.
+        // Try reading balance from common offsets (40, 48, 64)
+        for (const acc of accounts2) {
+          const data = acc.account.data;
+          if (data.length >= 48) {
+            // Try reading u64 at offset 40 (common for staked_amount field)
+            const stakedRaw = data.readBigUInt64LE(40);
+            if (stakedRaw > 0n) {
+              return Number(stakedRaw) / 1e9;
+            }
+          }
+        }
+        return 0;
+      }
+
+      // First filter matched — parse staked amount
+      // Refetch with full data
+      const fullAccounts = await this.connection.getProgramAccounts(programId, {
+        filters: [
+          { memcmp: { offset: 8, bytes: walletPubkey.toBase58() } },
+        ],
+      });
+
+      let totalStaked = 0;
+      for (const acc of fullAccounts) {
+        const data = acc.account.data;
+        if (data.length >= 48) {
+          // Try reading staked amount at offset 40
+          try {
+            const stakedRaw = data.readBigUInt64LE(40);
+            if (stakedRaw > 0n) {
+              totalStaked += Number(stakedRaw) / 1e9;
+            }
+          } catch {
+            // Try alternative offset
+            if (data.length >= 72) {
+              try {
+                const stakedRaw = data.readBigUInt64LE(64);
+                if (stakedRaw > 0n) {
+                  totalStaked += Number(stakedRaw) / 1e9;
+                }
+              } catch { /* skip */ }
+            }
+          }
+        }
+      }
+      return totalStaked;
+    } catch (error) {
+      console.warn("Failed to fetch staked SKR (non-fatal):", error);
+      return 0;
+    }
+  }
+
+  /**
    * Build complete portfolio snapshot using Helius DAS API
    */
   async getPortfolio(walletAddress: string): Promise<Portfolio> {
-    const { tokens, nfts } = await this.getAssets(walletAddress);
+    // Fetch tokens/NFTs and staked SKR in parallel
+    const [{ tokens, nfts }, stakedSkr] = await Promise.all([
+      this.getAssets(walletAddress),
+      this.getStakedSkr(walletAddress).catch(() => 0),
+    ]);
+
     const skrToken = tokens.find((t) => t.mint === SKR_MINT);
+    const skrPrice = skrToken?.priceUsd ?? 0;
     const defiPositions: DeFiPosition[] = [];
 
+    // Include staked SKR value in total
+    const stakedSkrValueUsd = stakedSkr * skrPrice;
     const tokenValue = tokens.reduce((sum, t) => sum + t.usdValue, 0);
     const defiValue = defiPositions.reduce((sum, p) => sum + p.valueUsd, 0);
-    const totalValueUsd = tokenValue + defiValue;
+    const totalValueUsd = tokenValue + defiValue + stakedSkrValueUsd;
 
     const change24hUsd = tokens.reduce(
       (sum, t) => sum + (t.usdValue * t.change24h) / 100,
@@ -296,7 +389,7 @@ class PortfolioService {
       stakedSol: 0,
       stakedSolValueUsd: stakedSolValue,
       skrBalance: skrToken?.balance ?? 0,
-      skrStaked: 0,
+      skrStaked: stakedSkr,
       lastUpdated: new Date(),
     };
   }

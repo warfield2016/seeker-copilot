@@ -10,7 +10,7 @@ export const SOLANA_RPC_ENDPOINT =
 export const SOLANA_CLUSTER = "mainnet-beta";
 
 // SKR Token
-export const SKR_MINT = "SKRtRYxgEQuYwuMqEkmCBFyNn93fpd1kJFh1WMBcFwc"; // placeholder - update with real mint
+export const SKR_MINT = "SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3"; // Official SKR token mint
 export const SKR_DECIMALS = 9;
 export const SKR_STAKE_PRO_THRESHOLD = 200; // 200 SKR staked for Pro tier
 
