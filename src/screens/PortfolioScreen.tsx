@@ -14,6 +14,7 @@ import TokenRow from "../components/TokenRow";
 import RiskGauge from "../components/RiskGauge";
 import PortfolioChart from "../components/PortfolioChart";
 import ShareCard from "../components/ShareCard";
+import { SkeletonPortfolio } from "../components/Skeleton";
 import PortfolioService from "../services/portfolioService";
 import walletService from "../services/walletService";
 import { DEMO_PORTFOLIO, DEMO_RISK, DEMO_SECURITY } from "../services/demoData";
@@ -74,12 +75,7 @@ export default function PortfolioScreen() {
   }, [fetchPortfolio]);
 
   if (loading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={styles.loadingText}>Loading portfolio...</Text>
-      </View>
-    );
+    return <SkeletonPortfolio />;
   }
 
   if (!portfolio) return null;

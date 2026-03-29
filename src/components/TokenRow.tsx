@@ -34,7 +34,7 @@ function formatPrice(price: number): string {
   return "< $0.000001";
 }
 
-export default function TokenRow({ token }: Props) {
+function TokenRow({ token }: Props) {
   const safeValue = Number.isFinite(token.usdValue) ? token.usdValue : 0;
   const safeChange = Number.isFinite(token.change24h) ? token.change24h : 0;
   const safeBalance = Number.isFinite(token.balance) ? token.balance : 0;
@@ -143,3 +143,5 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
+
+export default React.memo(TokenRow);
