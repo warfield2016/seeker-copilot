@@ -11,6 +11,7 @@ import PortfolioScreen from "./src/screens/PortfolioScreen";
 import AIScreen from "./src/screens/AIScreen";
 import RecommendationsScreen from "./src/screens/RecommendationsScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
+import ErrorBoundary from "./src/components/ErrorBoundary";
 
 const DISCLAIMER_KEY = "@seeker_copilot_disclaimer_v1";
 
@@ -160,7 +161,11 @@ export default function App() {
   // Don't render until disclaimer state is loaded
   if (disclaimerAccepted === null) return null;
 
-  const appContent = connected ? <MainApp /> : <ConnectScreen onConnected={() => setConnected(true)} />;
+  const appContent = connected ? (
+    <ErrorBoundary><MainApp /></ErrorBoundary>
+  ) : (
+    <ConnectScreen onConnected={() => setConnected(true)} />
+  );
 
   return (
     <>
