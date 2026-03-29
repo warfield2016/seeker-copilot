@@ -17,8 +17,10 @@
       }
     },
     "production": {
+      "distribution": "internal",
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "credentialsSource": "remote"
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://seeker-ai-copilot-production.up.railway.app"

@@ -1,0 +1,86 @@
+## Seeker AI Copilot — Solana dApp Store Publishing Config
+## Run: npx dapp-store create publisher  (once)
+## Run: npx dapp-store create app        (once per app)
+## Run: npx dapp-store create release    (every update)
+## Run: npx dapp-store publish submit -k <keypair-path> -u https://mainnet.helius-rpc.com/?api-key=<KEY> \
+##        --requestor-is-authorized --complies-with-solana-dapp-store-policies
+
+publisher:
+  # Your Solana wallet address — fund with 0.2+ SOL before publishing
+  address: "<YOUR_PUBLISHER_WALLET_ADDRESS>"
+  name: "Seeker AI Labs"
+  website: "https://seekeraiapp.com"
+  support_email: "support@seekeraiapp.com"
+  logo_url: "https://seekeraiapp.com/assets/icon-512.png"
+
+app:
+  # Generated after running: npx dapp-store create app
+  address: ""
+  name: "Seeker AI Copilot"
+  android_package: "com.seekerai.copilot"
+  description: |
+    AI-powered Solana portfolio intelligence for the Seeker phone.
+
+    Track your entire Solana portfolio in real-time with Helius DAS API, then
+    run 4 specialized AI agents for deep analysis: Risk Score, Trade Signals,
+    Market Trends, and Protocol Security.
+
+    ◎ PORTFOLIO TRACKING
+    • Full token + NFT inventory via Helius DAS
+    • SKR staked balance detection and valuation
+    • 24h price changes (Birdeye / CoinGecko)
+    • Risk score with concentration, volatility, IL, and liquidation metrics
+
+    ✦ AI COPILOT
+    • Natural language portfolio Q&A
+    • 20 free queries/day — upgrade to 100/day by staking 200 SKR
+    • Groq-powered multi-agent backend (sub-2s responses)
+
+    ⚡ INTELLIGENCE HUB
+    • Trade signals with confidence scoring
+    • Market trend intel (momentum, narrative, opportunity, risk)
+    • Protocol security scores with audit status
+
+    ⬡ SKR PRO TIER
+    • Stake 200+ SKR tokens to unlock Pro tier
+    • 100 AI queries/day vs 20 free
+    • Direct SKR token utility
+
+    ⚠️ Disclaimer: AI analysis is for informational purposes only.
+    Not financial advice. Always DYOR.
+  short_description: "AI portfolio tracker + 4-agent analysis for Solana Seeker"
+  icon_url: "https://seekeraiapp.com/assets/icon-512.png"
+  banner_url: "https://seekeraiapp.com/assets/banner-1200x600.png"
+  feature_graphic_url: "https://seekeraiapp.com/assets/feature-1200x1200.png"
+  screenshots:
+    - url: "https://seekeraiapp.com/assets/screenshots/01-portfolio.png"
+      alt: "Portfolio overview with total value and token holdings"
+    - url: "https://seekeraiapp.com/assets/screenshots/02-risk-gauge.png"
+      alt: "Risk gauge showing concentration, volatility, and liquidation risk"
+    - url: "https://seekeraiapp.com/assets/screenshots/03-ai-copilot.png"
+      alt: "AI Copilot answering questions about your portfolio"
+    - url: "https://seekeraiapp.com/assets/screenshots/04-intel-signals.png"
+      alt: "Intelligence Hub with trade signals and market trends"
+  categories:
+    - "Finance"
+    - "DeFi"
+  locales:
+    - "en-US"
+  urls:
+    license_url: "https://docs.solanamobile.com/dapp-publishing/dapp-store-sample-eula"
+    privacy_policy_url: "https://seekeraiapp.com/privacy"
+    website_url: "https://seekeraiapp.com"
+
+release:
+  # Generated after running: npx dapp-store create release
+  address: ""
+  version: "0.1.0"
+  version_code: 1
+  apk_url: "" # Set after EAS build completes
+  # Generated automatically from your EAS build
+  min_sdk_version: 24
+  target_sdk_version: 34
+  # Permissions used by the app
+  android_permissions:
+    - android.permission.INTERNET
+    - android.permission.VIBRATE

@@ -19,6 +19,7 @@
       "barStyle": "light-content"
     },
     "android": {
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#0D1117",
         "foregroundImage": "./assets/android-icon-foreground.png",
