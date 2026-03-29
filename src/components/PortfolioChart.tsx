@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions } from "react-native";
 import { COLORS } from "../config/constants";
 
 interface DataPoint {
@@ -74,6 +74,8 @@ function Sparkline({ data, width, height, color }: { data: number[]; width: numb
 }
 
 export default function PortfolioChart({ currentValue, change24hPercent }: Props) {
+  const { width: screenWidth } = useWindowDimensions();
+  const chartWidth = Math.min(screenWidth - 64, 360); // 32px padding each side
   const [period, setPeriod] = useState<Period>("7D");
   const data = useMemo(() => generateHistory(currentValue, change24hPercent, period), [currentValue, change24hPercent, period]);
   const values = data.map((d) => d.value);
@@ -103,7 +105,7 @@ export default function PortfolioChart({ currentValue, change24hPercent }: Props
         </View>
       </View>
       <View style={styles.chartArea}>
-        <Sparkline data={values} width={340} height={80} color={color} />
+        <Sparkline data={values} width={chartWidth} height={80} color={color} />
       </View>
       <View style={styles.range}>
         <Text style={styles.rangeText}>{data[0]?.date}</Text>

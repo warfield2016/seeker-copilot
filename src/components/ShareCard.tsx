@@ -77,10 +77,10 @@ export default function ShareCard({ portfolio, riskScore }: Props) {
       {/* Actions */}
       <View style={styles.actions}>
         <TouchableOpacity style={styles.actionBtn} onPress={handleShare}>
-          <Text style={styles.actionText}>Copy to Clipboard</Text>
+          <Text style={styles.actionText}>📋  Copy Summary</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.closeBtn} onPress={() => setExpanded(false)}>
-          <Text style={styles.closeText}>Close</Text>
+          <Text style={styles.closeText}>Dismiss</Text>
         </TouchableOpacity>
       </View>
     </View>

@@ -93,25 +93,38 @@ export default function PortfolioScreen() {
     >
       {/* Portfolio Header */}
       <View style={styles.header}>
-        <Text style={styles.totalLabel}>Total Portfolio Value</Text>
+        <Text style={styles.totalLabel}>TOTAL PORTFOLIO VALUE</Text>
         <Text style={styles.totalValue}>
           ${portfolio.totalValueUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </Text>
         <Text style={[styles.change, { color: changeColor }]}>
-          {portfolio.change24hPercent >= 0 ? "+" : ""}{portfolio.change24hPercent.toFixed(2)}% (${Math.abs(portfolio.change24hUsd).toFixed(2)}) today
+          {portfolio.change24hPercent >= 0 ? "+" : ""}{portfolio.change24hPercent.toFixed(2)}%{" "}
+          <Text style={{ fontWeight: "400" }}>
+            (${Math.abs(portfolio.change24hUsd).toFixed(2)}) today
+          </Text>
         </Text>
         {portfolio.walletAddress && portfolio.walletAddress !== "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU" && (
-          <Text style={styles.walletAddr}>
-            {portfolio.walletAddress.slice(0, 4)}...{portfolio.walletAddress.slice(-4)}
-          </Text>
+          <View style={styles.walletBadge}>
+            <Text style={styles.walletAddr}>
+              {portfolio.walletAddress.slice(0, 4)}...{portfolio.walletAddress.slice(-4)}
+            </Text>
+          </View>
         )}
       </View>
 
-      {/* AI Summary */}
+      {/* AI Summary — structured bullet card */}
       {summary && (
         <View style={styles.summaryCard}>
-          <Text style={styles.summaryLabel}>AI Summary</Text>
-          <Text style={styles.summaryText}>{summary.replace(/\*\*/g, "").replace(/^[-*] /gm, "  \u2022 ")}</Text>
+          <View style={styles.summaryHeader}>
+            <View style={styles.aiBadge}><Text style={styles.aiBadgeText}>AI</Text></View>
+            <Text style={styles.summaryLabel}>Analysis</Text>
+          </View>
+          {summary.replace(/\*\*/g, "").split(/\.\s+/).filter(Boolean).map((line, i) => (
+            <View key={i} style={styles.summaryRow}>
+              <Text style={styles.summaryDot}>●</Text>
+              <Text style={styles.summaryText}>{line.trim()}{line.trim().endsWith(".") ? "" : "."}</Text>
+            </View>
+          ))}
         </View>
       )}
 
@@ -220,21 +233,38 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: COLORS.background },
   loadingText: { color: COLORS.textSecondary, marginTop: 12, fontSize: 14 },
-  header: { padding: 24, alignItems: "center" },
-  totalLabel: { color: COLORS.textSecondary, fontSize: 14, marginBottom: 4 },
-  totalValue: { color: COLORS.text, fontSize: 36, fontWeight: "800" },
-  change: { fontSize: 16, fontWeight: "600", marginTop: 4 },
+  header: { paddingTop: 20, paddingBottom: 16, paddingHorizontal: 24, alignItems: "center" },
+  totalLabel: { color: COLORS.textSecondary, fontSize: 11, fontWeight: "600", letterSpacing: 1.5, marginBottom: 6, textTransform: "uppercase" },
+  totalValue: { color: COLORS.text, fontSize: 34, fontWeight: "800", letterSpacing: -1 },
+  change: { fontSize: 15, fontWeight: "600", marginTop: 6 },
+  walletBadge: {
+    marginTop: 8,
+    backgroundColor: COLORS.surfaceLight,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
   summaryCard: {
     backgroundColor: COLORS.surface,
     marginHorizontal: 16,
     borderRadius: 12,
-    padding: 16,
+    padding: 14,
     marginBottom: 8,
     borderLeftWidth: 3,
     borderLeftColor: COLORS.primary,
   },
-  summaryLabel: { color: COLORS.primary, fontSize: 12, fontWeight: "700", marginBottom: 6, letterSpacing: 0.5 },
-  summaryText: { color: COLORS.text, fontSize: 14, lineHeight: 20 },
+  summaryHeader: { flexDirection: "row", alignItems: "center", marginBottom: 10, gap: 8 },
+  aiBadge: {
+    backgroundColor: COLORS.primary + "33",
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  aiBadgeText: { color: COLORS.primary, fontSize: 10, fontWeight: "800", letterSpacing: 0.5 },
+  summaryLabel: { color: COLORS.textSecondary, fontSize: 13, fontWeight: "600" },
+  summaryRow: { flexDirection: "row", marginBottom: 4, paddingRight: 8 },
+  summaryDot: { color: COLORS.primary, fontSize: 8, marginTop: 5, marginRight: 8, width: 10 },
+  summaryText: { color: COLORS.text, fontSize: 13, lineHeight: 19, flex: 1 },
   skrBanner: {
     backgroundColor: COLORS.surface,
     marginHorizontal: 16,

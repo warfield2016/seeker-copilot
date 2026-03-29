@@ -67,10 +67,8 @@ export default function AIChat({ portfolio, userTier, onQueryUsed }: Props) {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View style={styles.header}>
-        <Text style={styles.title}>AI Copilot</Text>
         <Text style={[styles.queries, userTier.queriesRemaining <= 3 && { color: COLORS.warning }]}>
-          {userTier.queriesRemaining}/{userTier.queriesPerDay} queries
-          {userTier.level === "pro" ? " (Pro)" : ""}
+          {userTier.queriesRemaining}/{userTier.queriesPerDay} queries remaining
         </Text>
       </View>
 
@@ -149,22 +147,16 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
-  title: {
-    color: COLORS.text,
-    fontSize: 18,
-    fontWeight: "700",
-  },
   queries: {
     color: COLORS.textSecondary,
-    fontSize: 13,
+    fontSize: 12,
+    fontWeight: "500",
   },
   suggestions: {
     padding: 16,

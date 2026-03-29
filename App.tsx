@@ -16,11 +16,13 @@ const Tab = createBottomTabNavigator();
 const SEEKER_WIDTH = 393;
 const SEEKER_HEIGHT = 873;
 
-function TabIcon({ label, focused }: { label: string; focused: boolean }) {
+function TabIcon({ icon, label, focused }: { icon: string; label: string; focused: boolean }) {
+  const color = focused ? COLORS.secondary : COLORS.textSecondary;
   return (
-    <Text style={[styles.tabLabel, { color: focused ? COLORS.secondary : COLORS.textSecondary }]}>
-      {label}
-    </Text>
+    <View style={{ alignItems: "center", gap: 2 }}>
+      <Text style={{ fontSize: 18, color }}>{icon}</Text>
+      <Text style={{ fontSize: 9, fontWeight: "600", color, letterSpacing: 0.3 }}>{label}</Text>
+    </View>
   );
 }
 
@@ -32,7 +34,7 @@ function MainApp() {
           headerStyle: { backgroundColor: COLORS.background, elevation: 0, shadowOpacity: 0, borderBottomWidth: 1, borderBottomColor: COLORS.border },
           headerTintColor: COLORS.text,
           headerTitleStyle: { fontWeight: "700" },
-          tabBarStyle: { backgroundColor: COLORS.surface, borderTopColor: COLORS.border, borderTopWidth: 1, height: 56, paddingBottom: 6, paddingTop: 6 },
+          tabBarStyle: { backgroundColor: COLORS.surface, borderTopColor: COLORS.border, borderTopWidth: 1, height: 60, paddingBottom: 8, paddingTop: 4 },
           tabBarActiveTintColor: COLORS.secondary,
           tabBarInactiveTintColor: COLORS.textSecondary,
         }}
@@ -40,17 +42,17 @@ function MainApp() {
         <Tab.Screen
           name="Portfolio"
           component={PortfolioScreen}
-          options={{ tabBarIcon: ({ focused }) => <TabIcon label="$" focused={focused} /> }}
+          options={{ tabBarIcon: ({ focused }) => <TabIcon icon="◎" label="Portfolio" focused={focused} />, tabBarLabel: () => null }}
         />
         <Tab.Screen
           name="AI Copilot"
           component={AIScreen}
-          options={{ tabBarIcon: ({ focused }) => <TabIcon label="AI" focused={focused} /> }}
+          options={{ tabBarIcon: ({ focused }) => <TabIcon icon="✦" label="Copilot" focused={focused} />, tabBarLabel: () => null }}
         />
         <Tab.Screen
           name="Intel"
           component={RecommendationsScreen}
-          options={{ tabBarIcon: ({ focused }) => <TabIcon label="!" focused={focused} /> }}
+          options={{ tabBarIcon: ({ focused }) => <TabIcon icon="⚡" label="Intel" focused={focused} />, tabBarLabel: () => null }}
         />
       </Tab.Navigator>
     </NavigationContainer>
