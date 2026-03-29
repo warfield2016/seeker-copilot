@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
   tabText: { color: COLORS.textSecondary, fontSize: 12, fontWeight: "700" },
   tabTextActive: { color: COLORS.primary },
   // Cards
-  card: { backgroundColor: COLORS.surface, borderRadius: 12, padding: 14, marginBottom: 10 },
+  card: { backgroundColor: COLORS.surface, borderRadius: 12, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: COLORS.glow, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.06, shadowRadius: 8 },
   cardHeader: { flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 8 },
   badge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
   badgeText: { fontSize: 10, fontWeight: "800", letterSpacing: 0.5 },

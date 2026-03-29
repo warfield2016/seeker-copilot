@@ -274,8 +274,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: COLORS.glow,
     overflow: "hidden",
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
   },
   row: {
     flexDirection: "row",

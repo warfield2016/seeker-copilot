@@ -130,7 +130,6 @@ const arcStyles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     right: 0,
     top: 0,
-    transformOrigin: "left center",
   },
   needleContainer: {
     position: "absolute",
@@ -169,6 +168,12 @@ const styles = StyleSheet.create({
     padding: 16,
     marginHorizontal: 16,
     marginVertical: 8,
+    borderWidth: 1,
+    borderColor: COLORS.glow,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
   },
   title: {
     color: COLORS.textSecondary,

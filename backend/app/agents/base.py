@@ -27,13 +27,13 @@ def get_llm():
         if not api_key:
             raise ValueError("GROQ_API_KEY environment variable is required")
         from langchain_groq import ChatGroq
-        _llm_instance = ChatGroq(model=model or "llama-3.3-70b-versatile", temperature=0.3, max_tokens=1024)
+        _llm_instance = ChatGroq(model=model or "llama-3.3-70b-versatile", temperature=0.3, max_tokens=2048)
     elif provider == "anthropic":
         api_key = os.getenv("ANTHROPIC_API_KEY")
         if not api_key:
             raise ValueError("ANTHROPIC_API_KEY environment variable is required")
         from langchain_anthropic import ChatAnthropic
-        _llm_instance = ChatAnthropic(model=model or "claude-sonnet-4-20250514", temperature=0.3, max_tokens=1024)
+        _llm_instance = ChatAnthropic(model=model or "claude-opus-4-6", temperature=0.3, max_tokens=4096)
     elif provider == "openai":
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
@@ -100,10 +100,26 @@ def parse_json_from_llm(content: str, fallback=None):
     return fallback
 
 
-async def invoke_agent(system_prompt: str, user_prompt: str, timeout: float = 25.0) -> str:
-    """Invoke LLM with system + user message. Returns raw content string."""
+async def invoke_agent(system_prompt: str, user_prompt: str, timeout: float = 30.0, retries: int = 2) -> str:
+    """Invoke LLM with system + user message. Retries on transient errors."""
     import asyncio
     llm = get_llm()
     messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]
-    response = await asyncio.wait_for(llm.ainvoke(messages), timeout=timeout)
-    return response.content
+    last_error = None
+    for attempt in range(retries):
+        try:
+            response = await asyncio.wait_for(llm.ainvoke(messages), timeout=timeout)
+            return response.content
+        except asyncio.TimeoutError:
+            last_error = TimeoutError(f"LLM timed out after {timeout}s (attempt {attempt + 1})")
+            logger.warning(f"LLM timeout attempt {attempt + 1}/{retries}")
+        except Exception as e:
+            err_str = str(e).lower()
+            if "429" in err_str or "rate" in err_str:
+                wait = 2 ** attempt
+                logger.warning(f"Rate limited, retrying in {wait}s (attempt {attempt + 1})")
+                await asyncio.sleep(wait)
+                last_error = e
+            else:
+                raise
+    raise last_error or RuntimeError("LLM invocation failed")

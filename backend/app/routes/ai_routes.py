@@ -14,8 +14,8 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 orchestrator = Orchestrator()
 
-LLM_TIMEOUT_SECONDS = 30
-DEEP_ANALYSIS_TIMEOUT = 60  # longer for multi-agent pipeline
+LLM_TIMEOUT_SECONDS = 45
+DEEP_ANALYSIS_TIMEOUT = 90  # longer for multi-agent pipeline
 
 
 # --- Request Models ---

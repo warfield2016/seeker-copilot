@@ -122,6 +122,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: COLORS.glow,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
   },
   header: {
     flexDirection: "row",

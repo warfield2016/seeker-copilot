@@ -28,21 +28,33 @@ export const COINGECKO_API = "https://api.coingecko.com/api/v3";
 export const FREE_QUERIES_PER_DAY = 20;
 export const PRO_QUERIES_PER_DAY = 100;
 
-// UI
+// UI — Cyberpunk neon palette
 export const COLORS = {
-  primary: "#9945FF",       // Solana purple
-  secondary: "#14F195",     // Solana green
-  background: "#0D1117",    // Dark background
-  surface: "#161B22",       // Card background
-  surfaceLight: "#21262D",  // Elevated surface
+  primary: "#B14EFF",       // Neon purple (brighter)
+  secondary: "#14F195",     // Solana green (iconic, keep)
+  accent: "#00F0FF",        // Cyan neon
+  accentHot: "#FF006E",     // Hot pink
+  background: "#080B12",    // Deep dark base
+  surface: "#0F1419",       // Dark card background
+  surfaceLight: "#1A2028",  // Elevated surface
   text: "#F0F6FC",          // Primary text
   textSecondary: "#8B949E", // Secondary text
-  success: "#3FB950",       // Green
-  warning: "#D29922",       // Yellow/amber
-  danger: "#F85149",        // Red
-  border: "#30363D",        // Border color
   textMuted: "#6E7681",     // Tertiary/muted text
+  success: "#00FF88",       // Neon green
+  warning: "#FFB800",       // Amber
+  danger: "#FF2D55",        // Hot red
+  border: "#1E2530",        // Subtle border
   skr: "#FFB800",           // SKR token gold
+  glow: "#B14EFF33",        // Purple glow for shadows/borders
+  glowCyan: "#00F0FF22",    // Cyan glow
+  glowStrong: "#B14EFF66",  // Strong purple glow
+};
+
+export const GRADIENTS = {
+  header: ["#080B12", "#0F1419"],
+  card: ["#0F1419", "#131A22"],
+  accent: ["#B14EFF", "#00F0FF"],
+  neonBorder: "#00F0FF33",
 };
 
 export const FONTS = {

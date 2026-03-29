@@ -196,7 +196,11 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: COLORS.glow,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
   },
   chipIcon: {
     color: COLORS.secondary,
