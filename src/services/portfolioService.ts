@@ -348,9 +348,12 @@ class PortfolioService {
   }
 
   /**
-   * Build complete portfolio snapshot using Helius DAS API
+   * Build complete portfolio snapshot using Helius DAS API.
+   * Includes LST detection for staked positions and correct SKR staking.
    */
   async getPortfolio(walletAddress: string): Promise<Portfolio> {
+    const { detectStakedPositions, enrichWithLiveAPY } = await import("./defiDetectionService");
+
     // Fetch tokens/NFTs and staked SKR in parallel
     const [{ tokens, nfts }, stakedSkr] = await Promise.all([
       this.getAssets(walletAddress),
@@ -359,11 +362,22 @@ class PortfolioService {
 
     const skrToken = tokens.find((t) => t.mint === SKR_MINT);
     const skrPrice = skrToken?.priceUsd ?? 0;
-    const defiPositions: DeFiPosition[] = [];
 
-    // Include staked SKR value in total
-    const stakedSkrValueUsd = stakedSkr * skrPrice;
+    // Detect LST staked positions from token holdings
+    const stakedPositions = detectStakedPositions(tokens);
+    enrichWithLiveAPY(stakedPositions).catch(() => {}); // fire-and-forget APY enrichment
+
+    // Fix: Only count staked SKR that is ACTUALLY in the staking program
+    // (separate from liquid SKR in wallet). If staked amount equals wallet
+    // balance, the tokens are liquid — not staked.
+    const liquidSkrBalance = skrToken?.balance ?? 0;
+    const actualStakedSkr = (stakedSkr > 0 && stakedSkr !== liquidSkrBalance) ? stakedSkr : 0;
+    const stakedSkrValueUsd = actualStakedSkr * skrPrice;
+
+    // Token value already includes LSTs (they have prices from DAS/Birdeye)
+    // No double-counting: LSTs stay in tokens, staked section is UI-only annotation
     const tokenValue = tokens.reduce((sum, t) => sum + t.usdValue, 0);
+    const defiPositions: DeFiPosition[] = [];
     const defiValue = defiPositions.reduce((sum, p) => sum + p.valueUsd, 0);
     const totalValueUsd = tokenValue + defiValue + stakedSkrValueUsd;
 
@@ -373,10 +387,8 @@ class PortfolioService {
     );
     const change24hPercent = totalValueUsd > 0 ? (change24hUsd / totalValueUsd) * 100 : 0;
 
-    const stakedTokenSymbols = ["JitoSOL", "mSOL", "bSOL", "stSOL", "jitoSOL"];
-    const stakedSolValue = tokens
-      .filter((t) => stakedTokenSymbols.includes(t.symbol))
-      .reduce((sum, t) => sum + t.usdValue, 0);
+    // Total staked SOL value across all LSTs
+    const stakedSolValue = stakedPositions.reduce((sum, p) => sum + p.valueUsd, 0);
 
     return {
       walletAddress,
@@ -388,8 +400,9 @@ class PortfolioService {
       nfts,
       stakedSol: 0,
       stakedSolValueUsd: stakedSolValue,
-      skrBalance: skrToken?.balance ?? 0,
-      skrStaked: stakedSkr,
+      skrBalance: liquidSkrBalance,
+      skrStaked: actualStakedSkr,
+      stakedPositions,
       lastUpdated: new Date(),
     };
   }

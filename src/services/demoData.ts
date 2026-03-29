@@ -129,6 +129,28 @@ export const DEMO_PORTFOLIO: Portfolio = {
   stakedSolValueUsd: 2142.0,
   skrBalance: 5000,
   skrStaked: 200,
+  stakedPositions: [
+    {
+      symbol: "JitoSOL",
+      protocol: "Jito",
+      mint: "J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn",
+      balance: 12.5,
+      valueUsd: 2187.5,
+      priceUsd: 175.0,
+      aprEstimate: 7.8,
+      change24h: 3.2,
+    },
+    {
+      symbol: "mSOL",
+      protocol: "Marinade",
+      mint: "mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So",
+      balance: 5.2,
+      valueUsd: 910.0,
+      priceUsd: 175.0,
+      aprEstimate: 7.2,
+      change24h: 3.1,
+    },
+  ],
   lastUpdated: new Date(),
 };
 

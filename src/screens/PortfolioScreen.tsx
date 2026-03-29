@@ -147,6 +147,30 @@ export default function PortfolioScreen() {
         </View>
       )}
 
+      {/* Staked Positions (LSTs) */}
+      {portfolio.stakedPositions && portfolio.stakedPositions.length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Staked ({portfolio.stakedPositions.length})</Text>
+          <View style={styles.stakedList}>
+            {portfolio.stakedPositions.map((pos) => (
+              <View key={pos.mint} style={styles.stakedRow}>
+                <View style={styles.stakedLeft}>
+                  <Text style={styles.stakedSymbol}>{pos.symbol}</Text>
+                  <Text style={styles.stakedProtocol}>{pos.protocol}</Text>
+                </View>
+                <View style={styles.stakedCenter}>
+                  <Text style={styles.stakedBalance}>{pos.balance.toLocaleString(undefined, { maximumFractionDigits: 4 })}</Text>
+                </View>
+                <View style={styles.stakedRight}>
+                  <Text style={styles.stakedValue}>${pos.valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</Text>
+                  <Text style={styles.stakedApy}>{pos.aprEstimate.toFixed(1)}% APR</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+
       {/* Risk Score */}
       {riskScore && <RiskGauge riskScore={riskScore} />}
 
@@ -334,6 +358,34 @@ const styles = StyleSheet.create({
   safetyBadgeText: { fontSize: 10, fontWeight: "800" },
   walletAddr: { color: COLORS.textSecondary, fontSize: 12, marginTop: 6, fontFamily: "Courier" },
   lastUpdated: { color: COLORS.textSecondary, fontSize: 12, textAlign: "center", paddingVertical: 24 },
+  stakedList: {
+    backgroundColor: COLORS.surface,
+    marginHorizontal: 16,
+    borderRadius: 12,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: COLORS.secondary + "33",
+    shadowColor: COLORS.secondary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+  },
+  stakedRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  stakedLeft: { flex: 1 },
+  stakedSymbol: { color: COLORS.text, fontSize: 14, fontWeight: "700" },
+  stakedProtocol: { color: COLORS.textMuted, fontSize: 11, marginTop: 1 },
+  stakedCenter: { flex: 1, alignItems: "center" },
+  stakedBalance: { color: COLORS.textSecondary, fontSize: 13 },
+  stakedRight: { flex: 1, alignItems: "flex-end" },
+  stakedValue: { color: COLORS.text, fontSize: 14, fontWeight: "600" },
+  stakedApy: { color: COLORS.success, fontSize: 11, fontWeight: "700", marginTop: 2 },
   nftRow: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 16, gap: 8 },
   nftCard: {
     backgroundColor: COLORS.surface,

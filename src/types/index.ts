@@ -31,6 +31,18 @@ export interface NFTHolding {
   estimatedValueUsd?: number;
 }
 
+export interface StakedPosition {
+  symbol: string;
+  protocol: string;
+  mint: string;
+  balance: number;
+  valueUsd: number;
+  priceUsd: number;
+  aprEstimate: number;
+  change24h: number;
+  logoUri?: string;
+}
+
 export interface Portfolio {
   walletAddress: string;
   totalValueUsd: number;
@@ -43,6 +55,7 @@ export interface Portfolio {
   stakedSolValueUsd: number;
   skrBalance: number;
   skrStaked: number;
+  stakedPositions?: StakedPosition[];
   lastUpdated: Date;
 }
 
