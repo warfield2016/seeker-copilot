@@ -41,6 +41,7 @@ export const COLORS = {
   warning: "#D29922",       // Yellow/amber
   danger: "#F85149",        // Red
   border: "#30363D",        // Border color
+  textMuted: "#6E7681",     // Tertiary/muted text
   skr: "#FFB800",           // SKR token gold
 };
 

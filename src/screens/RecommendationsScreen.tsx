@@ -79,8 +79,8 @@ export default function RecommendationsScreen() {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={styles.loadingText}>4 AI agents analyzing...</Text>
-        <Text style={styles.loadingSub}>Risk + Trends + Security → Recommendations</Text>
+        <Text style={styles.loadingText}>Analyzing portfolio...</Text>
+        <Text style={styles.loadingSub}>4 agents · Risk + Trends + Security → Intel</Text>
       </View>
     );
   }

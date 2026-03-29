@@ -68,27 +68,27 @@ export default function ConnectScreen({ onConnected }: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        {/* Animated logo */}
+        {/* Animated logo with glow */}
         <Animated.View style={[styles.logoContainer, { transform: [{ scale: pulseAnim }] }, fadeUp(logoAnim)]}>
-          <View style={styles.logoOuter}>
+          <View style={styles.logoGlow}>
             <View style={styles.logoCircle}>
-              <Text style={styles.logoText}>AI</Text>
+              <Text style={styles.logoText}>✦</Text>
             </View>
           </View>
         </Animated.View>
 
         <Animated.View style={fadeUp(titleAnim)}>
           <Text style={styles.title}>{APP_NAME}</Text>
-          <Text style={styles.subtitle}>Your AI portfolio analyst{"\n"}for Solana Seeker</Text>
+          <Text style={styles.subtitle}>AI-powered portfolio intelligence{"\n"}for Solana Seeker</Text>
         </Animated.View>
 
         {/* Features — clean grid */}
         <Animated.View style={[styles.features, fadeUp(featuresAnim)]}>
           <View style={styles.featureGrid}>
-            <FeatureChip icon="$" label="Track" />
-            <FeatureChip icon="AI" label="Analyze" />
-            <FeatureChip icon="!" label="Alerts" />
-            <FeatureChip icon="SKR" label="Pro" />
+            <FeatureChip icon="◎" label="Track" />
+            <FeatureChip icon="✦" label="Analyze" />
+            <FeatureChip icon="⚡" label="Intel" />
+            <FeatureChip icon="⬡" label="SKR Pro" />
           </View>
         </Animated.View>
 
@@ -137,35 +137,40 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     alignItems: "center",
   },
-  logoContainer: { marginBottom: 28 },
-  logoOuter: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: COLORS.primary + "22",
+  logoContainer: { marginBottom: 24 },
+  logoGlow: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.primary + "18",
     justifyContent: "center",
     alignItems: "center",
+    // Purple glow effect
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 24,
+    elevation: 12,
   },
   logoCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: COLORS.primary,
     justifyContent: "center",
     alignItems: "center",
   },
   logoText: {
     color: COLORS.text,
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "900",
-    letterSpacing: 1,
   },
   title: {
     color: COLORS.text,
-    fontSize: 26,
-    fontWeight: "900",
+    fontSize: 24,
+    fontWeight: "800",
     textAlign: "center",
-    letterSpacing: 0.5,
+    letterSpacing: -0.3,
   },
   subtitle: {
     color: COLORS.textSecondary,
