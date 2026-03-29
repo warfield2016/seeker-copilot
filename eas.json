@@ -23,7 +23,7 @@
         "credentialsSource": "remote"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://seeker-ai-copilot-production.up.railway.app"
+        "EXPO_PUBLIC_API_URL": "https://web-production-248e9.up.railway.app"
       }
     }
   },
