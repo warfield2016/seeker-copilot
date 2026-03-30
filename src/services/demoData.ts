@@ -56,7 +56,7 @@ export const DEMO_PORTFOLIO: Portfolio = {
       change24h: 0.0,
     },
     {
-      mint: "SKRtRYxgEQuYwuMqEkmCBFyNn93fpd1kJFh1WMBcFwc",
+      mint: "SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3",
       symbol: "SKR",
       name: "Seeker",
       balance: 5000,

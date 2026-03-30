@@ -208,14 +208,20 @@ class PortfolioService {
       };
     }
 
-    // Concentration risk: HHI on token weights
+    // Concentration risk: Normalized HHI on token weights
+    // Raw HHI ranges from 1/n (perfect diversification) to 1.0 (all in one asset)
+    // Normalize to 0-100 where 0 = fully diversified, 100 = single asset
+    const n = tokens.length;
     const hhi = tokenValue > 0
       ? tokens.reduce((sum, t) => {
           const w = t.usdValue / tokenValue;
           return sum + w * w;
         }, 0)
       : 0;
-    const concentrationRisk = Math.min(100, Math.round(hhi * 100));
+    const minHhi = n > 0 ? 1 / n : 0;
+    const concentrationRisk = n > 1
+      ? Math.min(100, Math.round(((hhi - minHhi) / (1 - minHhi)) * 100))
+      : (n === 1 ? 100 : 0);
 
     // Volatility: % of token value NOT in stablecoins
     const stableValue = tokens
@@ -368,18 +374,16 @@ class PortfolioService {
     enrichWithLiveAPY(stakedPositions).catch(() => {}); // fire-and-forget APY enrichment
 
     // SKR staking is delegation-based: tokens stay in wallet when staked.
-    // The staking program creates separate accounts to track staked amounts.
-    // Always trust the staking program result — if getProgramAccounts found
-    // staking accounts, those tokens ARE staked regardless of wallet balance.
+    // The staked tokens are ALREADY counted in `tokens` via DAS/getAssetsByOwner.
+    // Do NOT add stakedSkrValueUsd to totalValueUsd — that would double-count.
+    // The staked amount is tracked separately for UI display only.
     const liquidSkrBalance = skrToken?.balance ?? 0;
-    const stakedSkrValueUsd = stakedSkr * skrPrice;
 
-    // Token value already includes LSTs (they have prices from DAS/Birdeye)
-    // No double-counting: LSTs stay in tokens, staked section is UI-only annotation
+    // Token value already includes all tokens (including staked SKR + LSTs)
     const tokenValue = tokens.reduce((sum, t) => sum + t.usdValue, 0);
     const defiPositions: DeFiPosition[] = [];
     const defiValue = defiPositions.reduce((sum, p) => sum + p.valueUsd, 0);
-    const totalValueUsd = tokenValue + defiValue + stakedSkrValueUsd;
+    const totalValueUsd = tokenValue + defiValue;
 
     const change24hUsd = tokens.reduce(
       (sum, t) => sum + (t.usdValue * t.change24h) / 100,

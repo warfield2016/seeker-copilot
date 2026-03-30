@@ -37,7 +37,7 @@ Seeker AI Copilot is a portfolio intelligence platform built exclusively for the
 - Multi-agent backend processes questions through 4 specialized agents
 - Suggested questions on first load
 - Query counter with daily limits (Free: 20/day, Pro: 100/day)
-- Powered by Groq (llama-3.3-70b-versatile) with Claude Opus 4.6 optional
+- Multi-provider LLM backend (configurable via environment variables)
 
 ### 4. Intelligence Hub
 Three-tab analysis dashboard:

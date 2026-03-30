@@ -97,6 +97,11 @@ function PieChart({ tokens, size }: { tokens: TokenBalance[]; size: number }) {
   if (otherValue > 0) {
     slices.push({ label: "Other", value: otherValue, pct: (otherValue / total) * 100, color: COLORS.surfaceLight });
   }
+  // Ensure percentages sum to exactly 100 (fix floating-point drift)
+  const pctSum = slices.reduce((s, sl) => s + sl.pct, 0);
+  if (slices.length > 0 && Math.abs(pctSum - 100) > 0.01) {
+    slices[slices.length - 1].pct += 100 - pctSum;
+  }
 
   // Build concentric ring segments using rotation transforms
   let currentAngle = 0;

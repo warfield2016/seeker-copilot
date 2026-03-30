@@ -29,9 +29,15 @@ railway init --name seeker-ai-copilot
 echo ""
 echo "▶ Step 3/5  Setting environment variables..."
 
-# GROQ key (LLM inference — free tier, 30K tokens/min)
+# Prompt for API key — never hardcode secrets in scripts
+read -rp "Enter your GROQ_API_KEY: " GROQ_KEY
+if [ -z "$GROQ_KEY" ]; then
+  echo "   ✗ GROQ_API_KEY is required. Get one at console.groq.com"
+  exit 1
+fi
+
 railway variables set \
-  GROQ_API_KEY="YOUR_GROQ_API_KEY" \
+  GROQ_API_KEY="$GROQ_KEY" \
   LLM_PROVIDER="groq" \
   CORS_ORIGINS="*" \
   RATE_LIMIT_RPM="60" \

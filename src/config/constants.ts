@@ -4,6 +4,7 @@ export const APP_NAME = "Seeker AI Copilot";
 export const APP_VERSION = "0.1.0";
 
 // Solana configuration — Helius RPC key via env var, never hardcoded
+// IMPORTANT: Set EXPO_PUBLIC_HELIUS_RPC_URL at build time. Never hardcode API keys.
 export const SOLANA_RPC_ENDPOINT =
   process.env.EXPO_PUBLIC_HELIUS_RPC_URL ||
   "https://mainnet.helius-rpc.com/?api-key=YOUR_HELIUS_KEY";

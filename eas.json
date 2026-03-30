@@ -16,7 +16,8 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://web-production-248e9.up.railway.app"
+        "EXPO_PUBLIC_API_URL": "https://web-production-248e9.up.railway.app",
+        "EXPO_PUBLIC_HELIUS_RPC_URL": "https://mainnet.helius-rpc.com/?api-key=af7065b3-68d4-4849-87c7-62081620fd68"
       }
     },
     "production": {
@@ -26,7 +27,8 @@
         "credentialsSource": "remote"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://web-production-248e9.up.railway.app"
+        "EXPO_PUBLIC_API_URL": "https://web-production-248e9.up.railway.app",
+        "EXPO_PUBLIC_HELIUS_RPC_URL": "https://mainnet.helius-rpc.com/?api-key=af7065b3-68d4-4849-87c7-62081620fd68"
       }
     }
   },

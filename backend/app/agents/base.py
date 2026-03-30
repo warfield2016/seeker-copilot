@@ -6,6 +6,7 @@ import os
 import re
 import json
 import logging
+import unicodedata
 from langchain_core.messages import SystemMessage, HumanMessage
 
 logger = logging.getLogger(__name__)
@@ -65,6 +66,8 @@ def sanitize_input(text: str, max_length: int = 500) -> str:
     """Sanitize user input to reduce prompt injection risk."""
     # Truncate first to bound attacker's payload
     text = text[:max_length]
+    # Normalize Unicode to collapse lookalike characters (e.g., Cyrillic ѕ → s)
+    text = unicodedata.normalize("NFKC", text)
     # Filter known injection patterns
     text = _INJECTION_RE.sub("[filtered]", text)
     # Escape double quotes to prevent prompt delimiter breakout
