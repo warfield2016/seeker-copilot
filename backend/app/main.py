@@ -1,6 +1,6 @@
 """
-Seeker AI Copilot - FastAPI Backend
-AI-powered portfolio analysis for Solana Seeker phone
+Seeker AI Copilot — FastAPI Backend
+Portfolio analysis engine for Solana Seeker phone.
 """
 import os
 import time

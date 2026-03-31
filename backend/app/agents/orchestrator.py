@@ -109,7 +109,7 @@ class Orchestrator:
         from app.agents.base import invoke_agent
         import json
 
-        system = """You are an elite Solana portfolio analyst powering the Seeker AI Copilot.
+        system = """You are an elite Solana portfolio analyst powering Seeker Copilot.
 
 Rules:
 - MAX 120 words per response. Be dense with insight, not filler.
@@ -143,7 +143,7 @@ Rules:
         from app.agents.base import sanitize_input
         import json
 
-        system = """You are an elite Solana portfolio analyst powering the Seeker AI Copilot.
+        system = """You are an elite Solana portfolio analyst powering Seeker Copilot.
 
 Rules:
 - MAX 150 words per response. Be thorough but concise.

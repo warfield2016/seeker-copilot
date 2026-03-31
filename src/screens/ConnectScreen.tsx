@@ -79,7 +79,7 @@ export default function ConnectScreen({ onConnected }: Props) {
 
         <Animated.View style={fadeUp(titleAnim)}>
           <Text style={styles.title}>{APP_NAME}</Text>
-          <Text style={styles.subtitle}>AI-powered portfolio intelligence{"\n"}for Solana Seeker</Text>
+          <Text style={styles.subtitle}>Portfolio intelligence{"\n"}for Solana Seeker</Text>
         </Animated.View>
 
         {/* Features — clean grid */}

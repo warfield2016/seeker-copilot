@@ -12,7 +12,6 @@ const SKR_STAKING_PROGRAM = "SKRskrmtL83pcL4YqLWt6iPefDqwXQWHSw9S9vz94BZ";
 // Minimum USD value to show a token — filters out spam/dust
 const MIN_TOKEN_VALUE_USD = 0.01;
 
-/** Fetch with timeout using AbortController */
 async function fetchWithTimeout(
   url: string,
   options: RequestInit = {},
@@ -27,7 +26,6 @@ async function fetchWithTimeout(
   }
 }
 
-/** Make a Helius DAS JSON-RPC call */
 async function heliusRpc(method: string, params: unknown): Promise<unknown> {
   const response = await fetchWithTimeout(
     SOLANA_RPC_ENDPOINT,
@@ -50,11 +48,7 @@ class PortfolioService {
     this.connection = connection;
   }
 
-  /**
-   * Fetch all assets (tokens + NFTs) via Helius DAS getAssetsByOwner.
-   * Single call replaces: getParsedTokenAccountsByOwner + batch Jupiter prices.
-   * Returns tokens with real logos, symbols, prices. Also separates out NFTs.
-   */
+  /** Fetch all tokens + NFTs for a wallet via Helius DAS. */
   async getAssets(walletAddress: string): Promise<{
     tokens: TokenBalance[];
     nfts: NFTHolding[];
@@ -174,16 +168,7 @@ class PortfolioService {
     return { tokens: filteredTokens, nfts };
   }
 
-  /**
-   * Calculate portfolio risk score.
-   *
-   * Formulas:
-   * - Concentration: Herfindahl-Hirschman Index (HHI) on token weights, scaled 0-100
-   * - Volatility: % of token value in non-stablecoins
-   * - IL Risk: % of total value in LP positions
-   * - Liquidation: average health deficit of borrow positions
-   * - Overall: weighted average (0.3, 0.3, 0.2, 0.2)
-   */
+  /** Risk score: normalized HHI + volatility + IL + liquidation, weighted 0.3/0.3/0.2/0.2 */
   calculateRiskScore(tokens: TokenBalance[], defiPositions: DeFiPosition[]): RiskScore {
     const tokenValue = tokens.reduce((sum, t) => sum + t.usdValue, 0);
     const defiValue = defiPositions.reduce((sum, p) => sum + p.valueUsd, 0);

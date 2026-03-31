@@ -19,22 +19,21 @@ app:
   name: "Seeker AI Copilot"
   android_package: "com.seekerai.copilot"
   description: |
-    AI-powered Solana portfolio intelligence for the Seeker phone.
+    Solana portfolio intelligence built for the Seeker phone.
 
-    Track your entire Solana portfolio in real-time with Helius DAS API, then
-    run 4 specialized AI agents for deep analysis: Risk Score, Trade Signals,
-    Market Trends, and Protocol Security.
+    Track your entire portfolio in real-time, get risk scoring,
+    trade signals, and security audits — all from one app.
 
     ◎ PORTFOLIO TRACKING
     • Full token + NFT inventory via Helius DAS
     • SKR staked balance detection and valuation
-    • 24h price changes (Birdeye / CoinGecko)
+    • 24h price changes via Birdeye and CoinGecko
     • Risk score with concentration, volatility, IL, and liquidation metrics
+    • 10 liquid staking tokens auto-detected (mSOL, JitoSOL, bSOL, etc.)
 
-    ✦ AI COPILOT
+    ✦ COPILOT
     • Natural language portfolio Q&A
     • 20 free queries/day — upgrade to 100/day by staking 200 SKR
-    • Groq-powered multi-agent backend (sub-2s responses)
 
     ⚡ INTELLIGENCE HUB
     • Trade signals with confidence scoring
@@ -43,12 +42,12 @@ app:
 
     ⬡ SKR PRO TIER
     • Stake 200+ SKR tokens to unlock Pro tier
-    • 100 AI queries/day vs 20 free
+    • 100 queries/day vs 20 free
     • Direct SKR token utility
 
-    ⚠️ Disclaimer: AI analysis is for informational purposes only.
+    ⚠️ Disclaimer: Analysis is for informational purposes only.
     Not financial advice. Always DYOR.
-  short_description: "AI portfolio tracker + 4-agent analysis for Solana Seeker"
+  short_description: "Portfolio tracker with risk scoring and trade signals for Solana Seeker"
   icon_url: "https://seekeraiapp.com/assets/icon-512.png"
   banner_url: "https://seekeraiapp.com/assets/banner-1200x600.png"
   feature_graphic_url: "https://seekeraiapp.com/assets/feature-1200x1200.png"

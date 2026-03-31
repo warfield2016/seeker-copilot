@@ -69,7 +69,7 @@ class DeepAnalysisRequest(BaseModel):
 
 @router.post("/summary")
 async def get_portfolio_summary(request: PortfolioSummaryRequest):
-    """Generate AI-powered portfolio summary (fast, single-agent)."""
+    """Generate portfolio summary (fast, single-agent)."""
     try:
         summary = await asyncio.wait_for(
             orchestrator.quick_summary(

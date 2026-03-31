@@ -94,14 +94,14 @@ export default function SettingsScreen() {
         <Text style={styles.appName}>{APP_NAME}</Text>
         <Text style={styles.appVersion}>Version {APP_VERSION}</Text>
         <Text style={styles.appTagline}>
-          AI-powered portfolio intelligence for Solana Seeker
+          Portfolio intelligence for Solana Seeker
         </Text>
       </View>
 
       {/* Disclaimer banner */}
       <View style={styles.disclaimerBanner}>
         <Text style={styles.disclaimerText}>
-          ⚠️  This app provides AI-generated analysis for{" "}
+          ⚠️  This app provides automated analysis for{" "}
           <Text style={{ fontWeight: "700", color: COLORS.text }}>
             informational purposes only.
           </Text>{" "}

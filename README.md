@@ -48,7 +48,7 @@ Four specialized agents run in parallel:
 | Blockchain | Helius DAS API (tokens, NFTs, native SOL) |
 | Prices | Birdeye (API key) / CoinGecko (free fallback) |
 | Backend | FastAPI (Python) on Railway |
-| Inference | Groq (llama-3.3-70b-versatile) |
+| Inference | Configurable (Groq / Anthropic / OpenAI) |
 | Market Data | DeFiLlama TVL + CoinGecko prices + yields |
 
 ## Project Structure
