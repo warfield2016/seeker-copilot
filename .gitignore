@@ -26,6 +26,7 @@
 /android
 /ios
 backend/.env
+backend/.venv/
 dist/
 node_modules/
 npm-debug.*

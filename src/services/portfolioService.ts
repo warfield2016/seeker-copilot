@@ -89,9 +89,6 @@ class PortfolioService {
       logoUri: SOL_LOGO,
     });
 
-    // Collect mints that have no price data for Jupiter fallback
-    const missingPriceMints: string[] = [];
-
     for (const asset of result.items) {
       const iface = asset.interface ?? "";
 
@@ -108,11 +105,6 @@ class PortfolioService {
         const priceInfo = info.price_info;
         const priceUsd = priceInfo?.price_per_token ?? 0;
         const usdValue = priceInfo?.total_price ?? balance * priceUsd;
-
-        if (usdValue < MIN_TOKEN_VALUE_USD && priceUsd === 0) {
-          // Track for Jupiter price fallback
-          missingPriceMints.push(asset.id);
-        }
 
         const symbol =
           info.symbol ||
@@ -262,7 +254,7 @@ class PortfolioService {
       // Anchor programs typically store: [8-byte discriminator][32-byte authority][...fields]
       // But some use: [8-byte discriminator][other fields][32-byte authority]
       const offsets = [8, 32, 40, 72, 104];
-      let matchedAccounts: Array<{ pubkey: PublicKey; account: { data: Buffer } }> = [];
+      let matchedAccounts: Array<{ pubkey: PublicKey; account: { data: Buffer; lamports: number; owner: PublicKey } }> = [];
 
       for (const offset of offsets) {
         try {
@@ -272,7 +264,7 @@ class PortfolioService {
             ],
           });
           if (accounts.length > 0) {
-            matchedAccounts = accounts as any;
+            matchedAccounts = accounts;
             break;
           }
         } catch { /* try next offset */ }
@@ -302,7 +294,7 @@ class PortfolioService {
       }
       return totalStaked;
     } catch (error) {
-      console.warn("Failed to fetch staked SKR (non-fatal):", error);
+      if (__DEV__) console.warn("Failed to fetch staked SKR (non-fatal):", error);
       return 0;
     }
   }

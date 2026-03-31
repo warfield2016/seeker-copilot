@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,11 +7,14 @@ import {
   ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
+  Platform,
 } from "react-native";
 import { COLORS } from "../config/constants";
-import { TradeRecommendation, TrendSignal, ProtocolSafety } from "../types";
+import { Portfolio, TradeRecommendation, TrendSignal, ProtocolSafety } from "../types";
 import { DEMO_PORTFOLIO, DEMO_RECOMMENDATIONS, DEMO_TRENDS, DEMO_SECURITY } from "../services/demoData";
 import aiService from "../services/aiService";
+import PortfolioService from "../services/portfolioService";
+import walletService from "../services/walletService";
 
 const ACTION_COLORS: Record<string, string> = {
   buy: COLORS.success,
@@ -45,9 +48,17 @@ export default function RecommendationsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [agentMeta, setAgentMeta] = useState<{ latency_seconds?: number; agents_run?: number } | null>(null);
 
-  const fetchAll = async () => {
+  const fetchAll = useCallback(async () => {
     try {
-      const result = await aiService.getDeepAnalysis(DEMO_PORTFOLIO);
+      // Use real portfolio if wallet is connected, otherwise demo
+      let portfolio: Portfolio = DEMO_PORTFOLIO;
+      if (Platform.OS !== "web" && walletService.isConnected()) {
+        try {
+          const svc = new PortfolioService(walletService.getConnection());
+          portfolio = await svc.getPortfolio(walletService.getAddress()!);
+        } catch { /* fall back to demo */ }
+      }
+      const result = await aiService.getDeepAnalysis(portfolio);
       if (result) {
         setRecs(result.recommendations?.length > 0 ? result.recommendations : DEMO_RECOMMENDATIONS);
         setTrends(result.trends?.length > 0 ? result.trends : DEMO_TRENDS);
@@ -65,9 +76,9 @@ export default function RecommendationsScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => { fetchAll(); }, [fetchAll]);
 
   const onRefresh = async () => {
     setRefreshing(true);

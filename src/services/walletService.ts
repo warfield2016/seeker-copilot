@@ -70,7 +70,7 @@ class WalletService {
     // MWA returns base64-encoded addresses — decode to base58
     this.authorizedAddress = decodeAddress(authResult.address);
     this.authToken = authResult.authToken;
-    console.log("Wallet connected:", this.authorizedAddress);
+    if (__DEV__) console.log("Wallet connected:", this.authorizedAddress);
     return this.authorizedAddress;
   }
 

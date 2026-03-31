@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
   },
   preview: {
     padding: 20,
-    backgroundColor: "#0d0d1a",
+    backgroundColor: COLORS.background,
     borderWidth: 1,
     borderColor: COLORS.primary + "44",
     borderRadius: 12,

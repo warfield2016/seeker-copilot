@@ -27,11 +27,11 @@ class AIService {
         const response = await fetch(url, { ...options, signal: controller.signal });
         clearTimeout(timer);
         return response;
-      } catch (err: any) {
-        lastError = err;
+      } catch (err) {
+        lastError = err instanceof Error ? err : new Error(String(err));
         if (i < retries) {
           const wait = 1000 * (i + 1);
-          console.warn(`[AIService] Retry ${i + 1}/${retries} in ${wait}ms:`, err.message);
+          if (__DEV__) console.warn(`[AIService] Retry ${i + 1}/${retries} in ${wait}ms:`, lastError.message);
           await new Promise((r) => setTimeout(r, wait));
         }
       }
@@ -74,7 +74,7 @@ class AIService {
       const data = await response.json();
       return data.summary;
     } catch (error) {
-      console.error("AI summary failed:", error);
+      if (__DEV__) console.error("AI summary failed:", error);
       return this.generateLocalSummary(portfolio);
     }
   }
@@ -111,9 +111,10 @@ class AIService {
         timestamp: new Date(),
         type: data.type ?? "general",
       };
-    } catch (error: any) {
-      console.error("AI question failed:", error);
-      const msg = error?.name === "AbortError"
+    } catch (error) {
+      if (__DEV__) console.error("AI question failed:", error);
+      const isTimeout = error instanceof Error && error.name === "AbortError";
+      const msg = isTimeout
         ? "Request timed out. The AI service is taking too long — try a simpler question."
         : `Unable to reach the AI service (${this.baseUrl}). Check your connection and try again.`;
       return {
@@ -157,7 +158,7 @@ class AIService {
       const data = await response.json();
       return data.recommendations;
     } catch (error) {
-      console.error("AI recommendations failed:", error);
+      if (__DEV__) console.error("AI recommendations failed:", error);
       return [];
     }
   }
@@ -193,7 +194,7 @@ class AIService {
       if (!response.ok) throw new Error(`API error: ${response.status}`);
       return await response.json();
     } catch (error) {
-      console.error("Deep analysis failed:", error);
+      if (__DEV__) console.error("Deep analysis failed:", error);
       return null;
     }
   }
