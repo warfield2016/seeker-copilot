@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Alert, Platform } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, Alert, Platform, Share } from "react-native";
 import { COLORS } from "../config/constants";
 import { Portfolio, RiskScore } from "../types";
 
@@ -27,7 +27,11 @@ export default function ShareCard({ portfolio, riskScore }: Props) {
       await navigator.clipboard.writeText(text);
       Alert.alert("Copied!", "Portfolio summary copied to clipboard.");
     } else {
-      Alert.alert("Share", text);
+      try {
+        await Share.share({ message: text, title: "My Solana Portfolio" });
+      } catch {
+        Alert.alert("Share", text);
+      }
     }
   };
 

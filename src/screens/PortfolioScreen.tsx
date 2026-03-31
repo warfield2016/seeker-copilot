@@ -269,8 +269,6 @@ export default function PortfolioScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: COLORS.background },
-  loadingText: { color: COLORS.textSecondary, marginTop: 12, fontSize: 14 },
   header: { paddingTop: 20, paddingBottom: 16, paddingHorizontal: 24, alignItems: "center" },
   totalLabel: { color: COLORS.textSecondary, fontSize: 11, fontWeight: "600", letterSpacing: 1.5, marginBottom: 6, textTransform: "uppercase" },
   totalValue: { color: COLORS.text, fontSize: 34, fontWeight: "800", letterSpacing: -1 },

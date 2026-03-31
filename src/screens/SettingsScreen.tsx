@@ -14,10 +14,10 @@ import { COLORS, APP_NAME, APP_VERSION, FREE_QUERIES_PER_DAY, PRO_QUERIES_PER_DA
 const DISCLAIMER_KEY = "@seeker_copilot_disclaimer_v1";
 
 const LINKS = {
-  privacy: "https://docs.solanamobile.com/dapp-publishing/tou",
-  terms: "https://docs.solanamobile.com/dapp-publishing/agreement",
+  privacy: "https://warfield2016.github.io/seeker-copilot/privacy.html",
+  terms: "https://warfield2016.github.io/seeker-copilot/terms.html",
   eula: "https://docs.solanamobile.com/dapp-publishing/dapp-store-sample-eula",
-  github: "https://github.com/warfield2016/seeker-ai-copilot",
+  github: "https://github.com/warfield2016/seeker-copilot",
   support: "mailto:warfield2016@gmail.com",
   helius: "https://helius.dev",
   solana: "https://solana.com",
@@ -169,7 +169,7 @@ export default function SettingsScreen() {
         <SettingsRow
           icon="✉️"
           label="Contact Support"
-          sublabel="support@seekeraiapp.com"
+          sublabel="warfield2016@gmail.com"
           onPress={() => openLink(LINKS.support)}
         />
         <View style={styles.divider} />
@@ -185,6 +185,33 @@ export default function SettingsScreen() {
           label="Built on Solana"
           sublabel="Mobile Wallet Adapter v2"
           onPress={() => openLink(LINKS.solana)}
+        />
+      </View>
+
+      {/* Disconnect */}
+      <SectionHeader title="Wallet" />
+      <View style={styles.card}>
+        <SettingsRow
+          icon="🔌"
+          label="Disconnect Wallet"
+          sublabel="Sign out and return to connect screen"
+          onPress={() => {
+            Alert.alert(
+              "Disconnect Wallet",
+              "Are you sure you want to disconnect?",
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Disconnect",
+                  style: "destructive",
+                  onPress: async () => {
+                    const walletService = (await import("../services/walletService")).default;
+                    await walletService.disconnect().catch(() => null);
+                  },
+                },
+              ]
+            );
+          }}
         />
       </View>
 

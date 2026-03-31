@@ -20,9 +20,6 @@ export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost
 export const HELIUS_API_URL = "https://api.helius.xyz/v0";
 export const BIRDEYE_API_URL = "https://public-api.birdeye.so";
 export const BIRDEYE_API_KEY = process.env.EXPO_PUBLIC_BIRDEYE_KEY || "";
-// Jupiter APIs (auth-gated since 2025 — kept for reference, not actively used)
-export const JUPITER_PRICE_API = "https://price.jup.ag/v6/price";
-export const JUPITER_TOKEN_API = "https://api.jup.ag/tokens/v2";
 export const COINGECKO_API = "https://api.coingecko.com/api/v3";
 
 // Query limits per day

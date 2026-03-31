@@ -10,7 +10,7 @@ class AIService {
 
   constructor() {
     this.baseUrl = API_BASE_URL;
-    console.log("[AIService] Backend URL:", this.baseUrl);
+    if (__DEV__) console.log("[AIService] Backend URL:", this.baseUrl);
   }
 
   /** Fetch with retry and timeout */

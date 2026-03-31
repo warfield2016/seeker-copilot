@@ -128,12 +128,3 @@ export interface DeepAnalysis {
   };
 }
 
-export interface AppState {
-  connected: boolean;
-  walletAddress: string | null;
-  portfolio: Portfolio | null;
-  riskScore: RiskScore | null;
-  userTier: UserTier;
-  loading: boolean;
-  error: string | null;
-}

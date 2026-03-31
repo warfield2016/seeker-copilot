@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Text, View, StyleSheet, Platform, useWindowDimensions, Modal, TouchableOpacity, ScrollView } from "react-native";
+import { Text, View, StyleSheet, Platform, useWindowDimensions, Modal, TouchableOpacity, ScrollView, Linking } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { COLORS } from "./src/config/constants";
 import ConnectScreen from "./src/screens/ConnectScreen";
@@ -134,8 +134,9 @@ function DisclaimerModal({ onAccept }: { onAccept: () => void }) {
           </TouchableOpacity>
           <Text style={disclaimerStyles.footer}>
             View our{" "}
-            <Text style={disclaimerStyles.link}>Privacy Policy</Text>
-            {" "}in Settings → About
+            <Text style={disclaimerStyles.link} onPress={() => Linking.openURL("https://warfield2016.github.io/seeker-copilot/privacy.html")}>Privacy Policy</Text>
+            {" "}and{" "}
+            <Text style={disclaimerStyles.link} onPress={() => Linking.openURL("https://warfield2016.github.io/seeker-copilot/terms.html")}>Terms</Text>
           </Text>
         </View>
       </View>
@@ -176,9 +177,7 @@ export default function App() {
   );
 }
 
-const styles = StyleSheet.create({
-  tabLabel: { fontSize: 16, fontWeight: "800" },
-});
+// (no unused styles)
 
 const disclaimerStyles = StyleSheet.create({
   backdrop: {

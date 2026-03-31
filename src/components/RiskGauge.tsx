@@ -103,13 +103,6 @@ function getRiskSeverity(value: number): string {
   return "High";
 }
 
-const RISK_EXPLANATIONS: Record<string, string> = {
-  Concentration: "Portfolio weight in a single asset",
-  Volatility: "Exposure to non-stablecoin assets",
-  "IL Risk": "Value in liquidity pools (impermanent loss)",
-  Liquidation: "Borrow position health proximity",
-};
-
 function RiskItem({ label, value }: { label: string; value: number }) {
   const color = getRiskColor(value);
   const severity = getRiskSeverity(value);

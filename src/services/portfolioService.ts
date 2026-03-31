@@ -175,14 +175,6 @@ class PortfolioService {
   }
 
   /**
-   * Fetch token balances (legacy path — uses DAS internally now)
-   */
-  async getTokenBalances(walletAddress: string): Promise<TokenBalance[]> {
-    const { tokens } = await this.getAssets(walletAddress);
-    return tokens;
-  }
-
-  /**
    * Calculate portfolio risk score.
    *
    * Formulas:

@@ -133,7 +133,7 @@ function PieChart({ tokens, size }: { tokens: TokenBalance[]; size: number }) {
                 height: size,
                 left: size / 2,
                 backgroundColor: seg.color,
-                opacity: seg.angle > 180 ? 1 : 1,
+                opacity: 1,
               }}
             />
             {seg.angle < 180 && (
@@ -246,6 +246,7 @@ export default React.memo(function PortfolioChart({ currentValue, change24hPerce
               <Text style={[styles.periodChange, { color }]}>
                 {isUp ? "+" : ""}{periodChange.toFixed(2)}%
               </Text>
+              <Text style={styles.simLabel}>Simulated</Text>
             </View>
             <View style={styles.periods}>
               {(["24H", "7D", "30D"] as Period[]).map((p) => (
@@ -317,6 +318,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   periodChange: { fontSize: 18, fontWeight: "800" },
+  simLabel: { color: COLORS.textMuted, fontSize: 9, letterSpacing: 0.5, marginTop: 2 },
   periods: { flexDirection: "row", gap: 4 },
   periodBtn: {
     paddingHorizontal: 10,
