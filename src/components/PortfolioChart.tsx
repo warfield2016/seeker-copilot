@@ -79,8 +79,9 @@ function AreaChart({ data, width, height, color }: { data: number[]; width: numb
   );
 }
 
-/** Pure RN pie chart using conic segments via border trick */
+/** Pure RN pie chart with tappable legend */
 function PieChart({ tokens, size }: { tokens: TokenBalance[]; size: number }) {
+  const [selected, setSelected] = useState<number | null>(null);
   const total = tokens.reduce((sum, t) => sum + t.usdValue, 0);
   if (total <= 0) return null;
 
@@ -164,7 +165,7 @@ function PieChart({ tokens, size }: { tokens: TokenBalance[]; size: number }) {
             )}
           </View>
         ))}
-        {/* Center hole */}
+        {/* Center hole — shows selected token or total */}
         <View style={{
           position: "absolute",
           width: size * 0.55,
@@ -176,20 +177,39 @@ function PieChart({ tokens, size }: { tokens: TokenBalance[]; size: number }) {
           justifyContent: "center",
           alignItems: "center",
         }}>
-          <Text style={{ color: COLORS.text, fontSize: 13, fontWeight: "800" }}>
-            ${total >= 1000 ? (total / 1000).toFixed(1) + "K" : total.toFixed(0)}
-          </Text>
+          {selected !== null && slices[selected] ? (
+            <>
+              <Text style={{ color: slices[selected].color, fontSize: 12, fontWeight: "800" }}>
+                {slices[selected].label}
+              </Text>
+              <Text style={{ color: COLORS.text, fontSize: 11, fontWeight: "700" }}>
+                ${slices[selected].value >= 1000 ? (slices[selected].value / 1000).toFixed(1) + "K" : slices[selected].value.toFixed(0)}
+              </Text>
+              <Text style={{ color: COLORS.textMuted, fontSize: 9 }}>
+                {slices[selected].pct.toFixed(1)}%
+              </Text>
+            </>
+          ) : (
+            <Text style={{ color: COLORS.text, fontSize: 13, fontWeight: "800" }}>
+              ${total >= 1000 ? (total / 1000).toFixed(1) + "K" : total.toFixed(0)}
+            </Text>
+          )}
         </View>
       </View>
 
-      {/* Legend */}
+      {/* Legend — tap to select */}
       <View style={pieStyles.legend}>
         {slices.map((s, i) => (
-          <View key={i} style={pieStyles.legendRow}>
+          <TouchableOpacity
+            key={i}
+            style={[pieStyles.legendRow, selected === i && { backgroundColor: s.color + "22", borderRadius: 6 }]}
+            onPress={() => setSelected(selected === i ? null : i)}
+            activeOpacity={0.7}
+          >
             <View style={[pieStyles.legendDot, { backgroundColor: s.color }]} />
             <Text style={pieStyles.legendLabel}>{s.label}</Text>
             <Text style={pieStyles.legendPct}>{s.pct.toFixed(1)}%</Text>
-          </View>
+          </TouchableOpacity>
         ))}
       </View>
     </View>

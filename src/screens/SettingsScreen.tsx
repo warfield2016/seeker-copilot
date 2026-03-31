@@ -16,12 +16,11 @@ const DISCLAIMER_KEY = "@seeker_copilot_disclaimer_v1";
 const LINKS = {
   privacy: "https://warfield2016.github.io/seeker-copilot/privacy.html",
   terms: "https://warfield2016.github.io/seeker-copilot/terms.html",
-  eula: "https://docs.solanamobile.com/dapp-publishing/dapp-store-sample-eula",
+  eula: "https://legal.solanamobile.com/dapp-store-tos",
   github: "https://github.com/warfield2016/seeker-copilot",
   support: "mailto:warfield2016@gmail.com",
   helius: "https://helius.dev",
-  solana: "https://solana.com",
-  solanaMobile: "https://solanamobile.com",
+  solana: "https://solanamobile.com",
   stakeSkr: "https://stake.solanamobile.com",
 };
 

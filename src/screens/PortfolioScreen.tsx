@@ -8,6 +8,7 @@ import {
   Platform,
   TouchableOpacity,
   Alert,
+  Image,
 } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import { COLORS } from "../config/constants";
@@ -237,22 +238,32 @@ export default function PortfolioScreen() {
         </View>
       </View>
 
-      {/* NFT Count */}
+      {/* NFTs */}
       {portfolio.nfts.length > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>NFTs ({portfolio.nfts.length})</Text>
-          <View style={styles.nftRow}>
+          <View style={styles.nftGrid}>
             {portfolio.nfts.slice(0, 6).map((nft) => (
               <View key={nft.mint} style={styles.nftCard}>
+                {nft.imageUri ? (
+                  <Image source={{ uri: nft.imageUri }} style={styles.nftImage} />
+                ) : (
+                  <View style={styles.nftImagePlaceholder}>
+                    <Text style={styles.nftPlaceholderText}>{nft.name?.[0] ?? "?"}</Text>
+                  </View>
+                )}
                 <Text style={styles.nftName} numberOfLines={1}>{nft.name}</Text>
                 {nft.collection && (
-                  <Text style={styles.nftCollection} numberOfLines={1}>{nft.collection.slice(0, 8)}...</Text>
+                  <Text style={styles.nftCollection} numberOfLines={1}>
+                    {nft.collection.slice(0, 6)}...{nft.collection.slice(-4)}
+                  </Text>
                 )}
               </View>
             ))}
             {portfolio.nfts.length > 6 && (
-              <View style={styles.nftCard}>
-                <Text style={styles.nftMore}>+{portfolio.nfts.length - 6} more</Text>
+              <View style={[styles.nftCard, styles.nftMoreCard]}>
+                <Text style={styles.nftMore}>+{portfolio.nfts.length - 6}</Text>
+                <Text style={styles.nftMoreLabel}>more</Text>
               </View>
             )}
           </View>
@@ -401,16 +412,45 @@ const styles = StyleSheet.create({
   stakedRight: { flex: 1, alignItems: "flex-end" },
   stakedValue: { color: COLORS.text, fontSize: 14, fontWeight: "600" },
   stakedApy: { color: COLORS.success, fontSize: 11, fontWeight: "700", marginTop: 2 },
-  nftRow: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 16, gap: 8 },
+  nftGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    paddingHorizontal: 16,
+    gap: 8,
+  },
   nftCard: {
     backgroundColor: COLORS.surface,
-    borderRadius: 10,
-    padding: 10,
-    minWidth: 90,
+    borderRadius: 12,
+    width: 100,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: COLORS.glow,
+    overflow: "hidden",
   },
-  nftName: { color: COLORS.text, fontSize: 11, fontWeight: "600" },
-  nftCollection: { color: COLORS.textSecondary, fontSize: 10, marginTop: 2 },
-  nftMore: { color: COLORS.primary, fontSize: 11, fontWeight: "700" },
+  nftImage: {
+    width: 100,
+    height: 100,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  nftImagePlaceholder: {
+    width: 100,
+    height: 100,
+    backgroundColor: COLORS.surfaceLight,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  nftPlaceholderText: {
+    color: COLORS.primary,
+    fontSize: 24,
+    fontWeight: "800",
+  },
+  nftName: { color: COLORS.text, fontSize: 10, fontWeight: "600", paddingHorizontal: 6, paddingTop: 6, paddingBottom: 2 },
+  nftCollection: { color: COLORS.textMuted, fontSize: 9, paddingHorizontal: 6, paddingBottom: 6 },
+  nftMoreCard: {
+    justifyContent: "center",
+    alignItems: "center",
+    height: 100,
+  },
+  nftMore: { color: COLORS.primary, fontSize: 20, fontWeight: "800" },
+  nftMoreLabel: { color: COLORS.textMuted, fontSize: 10 },
 });

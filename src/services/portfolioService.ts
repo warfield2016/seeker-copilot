@@ -249,78 +249,55 @@ class PortfolioService {
 
   /**
    * Fetch staked SKR amount from the SKR staking program.
-   * Queries getProgramAccounts with wallet as authority filter.
-   * Returns staked SKR amount (in UI units, 9 decimals).
+   * Searches all accounts owned by the staking program that reference this wallet.
+   * Tries multiple common Anchor account layouts to find the staked amount.
    */
   async getStakedSkr(walletAddress: string): Promise<number> {
     try {
       const programId = new PublicKey(SKR_STAKING_PROGRAM);
       const walletPubkey = new PublicKey(walletAddress);
+      const walletBytes = walletPubkey.toBase58();
 
-      // Query staking program for accounts owned by this wallet
-      // The authority/owner is typically at byte offset 8 (after discriminator)
-      const accounts = await this.connection.getProgramAccounts(programId, {
-        filters: [
-          { memcmp: { offset: 8, bytes: walletPubkey.toBase58() } },
-        ],
-        dataSlice: { offset: 0, length: 0 }, // We just need to know if accounts exist
-      });
+      // Try multiple offsets where the wallet pubkey might appear in the account data.
+      // Anchor programs typically store: [8-byte discriminator][32-byte authority][...fields]
+      // But some use: [8-byte discriminator][other fields][32-byte authority]
+      const offsets = [8, 32, 40, 72, 104];
+      let matchedAccounts: Array<{ pubkey: PublicKey; account: { data: Buffer } }> = [];
 
-      if (accounts.length === 0) {
-        // Try offset 32 (some programs put owner after a different header)
-        const accounts2 = await this.connection.getProgramAccounts(programId, {
-          filters: [
-            { memcmp: { offset: 32, bytes: walletPubkey.toBase58() } },
-          ],
-        });
-
-        if (accounts2.length === 0) return 0;
-
-        // Parse staked amount from account data
-        // SKR has 9 decimals. Staked amount is typically a u64 in the account.
-        // Try reading balance from common offsets (40, 48, 64)
-        for (const acc of accounts2) {
-          const data = acc.account.data;
-          if (data.length >= 48) {
-            // Try reading u64 at offset 40 (common for staked_amount field)
-            const stakedRaw = data.readBigUInt64LE(40);
-            if (stakedRaw > 0n) {
-              return Number(stakedRaw) / 1e9;
-            }
+      for (const offset of offsets) {
+        try {
+          const accounts = await this.connection.getProgramAccounts(programId, {
+            filters: [
+              { memcmp: { offset, bytes: walletBytes } },
+            ],
+          });
+          if (accounts.length > 0) {
+            matchedAccounts = accounts as any;
+            break;
           }
-        }
-        return 0;
+        } catch { /* try next offset */ }
       }
 
-      // First filter matched — parse staked amount
-      // Refetch with full data
-      const fullAccounts = await this.connection.getProgramAccounts(programId, {
-        filters: [
-          { memcmp: { offset: 8, bytes: walletPubkey.toBase58() } },
-        ],
-      });
+      if (matchedAccounts.length === 0) return 0;
 
+      // Parse staked amount — try reading u64 from multiple possible field positions
       let totalStaked = 0;
-      for (const acc of fullAccounts) {
+      for (const acc of matchedAccounts) {
         const data = acc.account.data;
-        if (data.length >= 48) {
-          // Try reading staked amount at offset 40
+        // Try every 8-byte aligned offset after the discriminator for a u64 that
+        // looks like a token amount (reasonable range for SKR with 9 decimals)
+        const amountOffsets = [40, 48, 56, 64, 72, 80, 88, 96, 104, 112];
+        for (const amtOffset of amountOffsets) {
+          if (data.length < amtOffset + 8) continue;
           try {
-            const stakedRaw = data.readBigUInt64LE(40);
-            if (stakedRaw > 0n) {
-              totalStaked += Number(stakedRaw) / 1e9;
+            const raw = data.readBigUInt64LE(amtOffset);
+            const amount = Number(raw) / 1e9;
+            // SKR staked amount should be > 0 and reasonable (< 1 billion)
+            if (amount > 0 && amount < 1_000_000_000) {
+              totalStaked += amount;
+              break; // found the amount field for this account
             }
-          } catch {
-            // Try alternative offset
-            if (data.length >= 72) {
-              try {
-                const stakedRaw = data.readBigUInt64LE(64);
-                if (stakedRaw > 0n) {
-                  totalStaked += Number(stakedRaw) / 1e9;
-                }
-              } catch { /* skip */ }
-            }
-          }
+          } catch { /* try next offset */ }
         }
       }
       return totalStaked;
