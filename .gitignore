@@ -34,3 +34,4 @@ web-build/
 yarn-debug.*
 yarn-error.*
 .claude/
+agents/
