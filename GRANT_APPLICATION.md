@@ -1,121 +1,112 @@
-# Solana Mobile Builder Grant Application
-## Seeker AI Copilot
+# Seeker Copilot — Solana Mobile Builder Grant Application
 
----
+## What is it
 
-### Project Name
-Seeker AI Copilot
+Seeker Copilot is a portfolio tracker and analysis tool built for the Solana Seeker phone. It connects through Mobile Wallet Adapter and Seed Vault, pulls your entire portfolio from Helius DAS, and runs multi-agent analysis to give you risk scores, trade signals, and security audits on your phone in real time.
 
-### One-Line Description
-AI-powered portfolio analyst for Solana Seeker — real-time risk scoring, natural-language insights, and trade recommendations secured by Seed Vault.
+The app detects SKR staking and gates a Pro tier behind staking 200+ SKR. That gives the token direct utility inside the app.
 
-### Category
-AI / DeFi / Portfolio Management
+## The problem
 
----
+Seeker owners have no native way to see their full portfolio picture without jumping between multiple apps. The Seed Vault wallet shows balances but doesn't tell you about concentration risk, whether your staking yields are competitive, or if a protocol you're using has been audited.
 
-### Problem
+There's no portfolio intelligence app in the Solana dApp Store. Jupiter, Backpack, Solflare are wallets and DEXs. None of them do multi-factor risk scoring or trade signal generation from your actual holdings.
 
-Seeker users are actively trading on Jupiter (#1 app), Drift, and Kamino with zero on-device intelligence. There is no native portfolio tracker that:
-- Aggregates token, DeFi, and staking positions in one view
-- Provides AI-driven risk analysis (concentration, volatility, IL, liquidation)
-- Generates actionable trade recommendations
-- Leverages Seed Vault for secure, read-only portfolio access
+## What it does
 
-The only AI app on the dApp Store (SendAI) is a general-purpose agent — not a focused portfolio tool.
+**Portfolio tracking**
+- Full token and NFT inventory via Helius DAS
+- 24h price changes from Birdeye and CoinGecko
+- Detects 10 liquid staking tokens (mSOL, JitoSOL, bSOL, stSOL, scnSOL, hSOL, jupSOL, LST, edgeSOL, bonkSOL) with live APR
+- SKR staking detection with APR display
+- Pie chart allocation view and performance chart
 
-### Solution
+**Risk scoring**
+- Normalized HHI concentration index
+- Volatility exposure based on non-stablecoin ratio
+- Impermanent loss risk from LP positions
+- Liquidation proximity for borrow positions
+- Overall weighted score 0-100 with plain language explanations
 
-Seeker AI Copilot is a mobile-first portfolio analyst that reads on-chain positions via Seed Vault and provides:
+**Trade intelligence**
+- 4 specialized agents run in parallel: Risk Analyst, Trend Researcher, Security Auditor, Trade Generator
+- Live market data from DeFiLlama TVL and CoinGecko
+- Confidence-scored buy/sell/hold/rebalance signals
+- Protocol safety scores for 11 Solana protocols
 
-1. **Portfolio Dashboard** — Tokens, DeFi positions (Jupiter/Drift/Kamino/Orca/Marinade), staked SOL, NFTs, all in one screen
-2. **AI Analysis Engine** — Natural-language summaries, risk scoring using Herfindahl-Hirschman Index for concentration, volatility exposure, IL risk, and liquidation proximity
-3. **Trade Signals** — AI-generated buy/sell/hold/rebalance recommendations with confidence scores
-4. **AI Chat** — Ask anything about your portfolio ("What's my biggest risk?", "Should I rebalance?")
-5. **SKR Integration** — Stake 200 SKR for Pro tier (unlimited AI queries), creating real token utility
+**Copilot chat**
+- Ask questions about your portfolio in plain language
+- 20 queries/day free, 100/day with 200+ SKR staked
+- Contextual suggested questions based on your holdings
 
-### SKR Token Utility
+## How it uses Solana Mobile Stack
 
-| Feature | Free Tier | Pro (200 SKR staked) |
-|---------|-----------|---------------------|
-| AI queries/day | 3 | Unlimited |
-| Risk analytics | Basic | Advanced |
-| Trade signals | — | Full access |
-| Multi-wallet | — | Up to 5 wallets |
+| Component | Usage |
+|---|---|
+| Mobile Wallet Adapter v2 | Wallet connection and authorization |
+| Seed Vault | Secure key storage, no private keys in the app |
+| SKR token | Staking gates Pro tier, 200+ SKR = 5x more queries |
+| Seeker hardware | Optimized for 393x873 resolution, AMOLED dark theme |
 
-Users retain SKR ownership while staked — this is subscription via staking, not spending. Creates sustained demand for SKR.
+## Tech stack
 
-### Technical Architecture
+- React Native with Expo SDK 51 and TypeScript
+- FastAPI backend on Railway
+- Helius DAS API for portfolio data
+- Birdeye and CoinGecko for prices
+- DeFiLlama for TVL and yield data
+- Configurable inference backend
 
-**Frontend:** React Native + Expo, Mobile Wallet Adapter (MWA), Seed Vault SDK
-**Backend:** Python/FastAPI + LangChain multi-agent AI system
-**AI:** Groq (Llama 3.3 70B) — free tier for MVP, upgradeable to Claude/GPT-4o
-**Data:** Jupiter Price API, Helius RPC, on-chain SPL token parsing
-**Security:** Seed Vault read-only access, prompt injection filtering, input validation, no private key exposure
+## Current status
 
-### Current Status — Working MVP
+- Working APK installable on Seeker
+- Backend deployed on Railway and responding to queries
+- Public GitHub repo at github.com/warfield2016/seeker-copilot
+- Privacy Policy and Terms of Service hosted on GitHub Pages
+- Ready for Solana dApp Store submission
 
-The app is fully functional with:
-- 3-tab interface (Portfolio, AI Copilot, Signals)
-- Live AI summaries and recommendations via Groq
-- Risk scoring with 4-metric breakdown (concentration, volatility, IL, liquidation)
-- Demo mode for web with Seeker phone frame simulator
-- MWA wallet connection for real device usage
-- SKR staking tier logic
-- Portfolio history chart with 24H/7D/30D views
-- Shareable portfolio cards
+## Milestones
 
-**Demo:** Available immediately — web preview runs on any browser with simulated Seeker phone frame.
+**Month 1 — dApp Store launch**
+- Submit to Solana dApp Store
+- Gather initial user feedback from Seeker community
+- Production APK with dedicated signing key
 
-### Competitive Landscape
+**Month 2 — Transaction history and real data**
+- Transaction history screen (the service layer is already built)
+- Replace simulated performance chart with real historical data
+- Persist daily query counts across sessions
+- Accessibility labels on all interactive elements
 
-| App | Category | Overlap |
-|-----|----------|---------|
-| SendAI | General AI agent | No portfolio focus |
-| Jupiter | DEX | Trading only, no analytics |
-| Phantom | Wallet | Basic balances, no AI |
-| Step Finance | Dashboard | Web only, no Seeker integration |
+**Month 3 — On-chain actions**
+- Jupiter swap integration so you can swap from the portfolio screen
+- Stake and unstake directly from the app
+- Price alerts and push notifications
+- DeFi position detection from on-chain program accounts
 
-Seeker AI Copilot is the only app combining portfolio aggregation + AI analysis + Seed Vault security + SKR utility.
+## Budget
 
-### Revenue Model
+| Item | Amount |
+|---|---|
+| EAS Production plan | $12 |
+| Helius Pro plan (RPC and DAS) | $49/mo |
+| Railway backend hosting | $5/mo |
+| Legal pages hosting | $0 via GitHub Pages |
+| Seeker device for testing | Already owned |
+| Development time over 3 months | Majority of grant |
+| **Total request** | **$10,000** |
 
-1. **SKR Staking** — Pro tier via 200 SKR staked (primary model)
-2. **Premium AI** — Pay-per-query in SKR for advanced analysis (burn mechanism)
-3. **Subscription fallback** — $9.99/mo fiat option for users without SKR
-4. **Performance fees** — Optional 1% on profits from executed AI recommendations (Phase 2)
+## Why this matters for the Seeker ecosystem
 
-### Roadmap
+Every phone platform needs a portfolio tracker that feels native. On iPhone its Delta or Zerion. On Seeker nothing like this exists yet.
 
-| Phase | Timeline | Deliverable |
-|-------|----------|-------------|
-| MVP (current) | Complete | Portfolio dashboard, AI analysis, risk scoring, trade signals |
-| v1.0 | +2 weeks | Seeker device testing, backend deployment, dApp Store submission |
-| v1.1 | +4 weeks | Multi-wallet, transaction history, push alerts, on-chain SKR staking |
-| v2.0 | +8 weeks | DeFi strategy automation, cross-chain support |
+This app gives SKR holders a reason to stake not for speculative yield but for direct utility inside an app they use daily. That kind of token usage is what makes the Seeker ecosystem sticky.
 
-### Team
+The multi-agent approach means analysis improves over time without shipping new builds. Prompts, data sources, and risk models can be updated server-side while users keep using the same app.
 
-Solo developer with direct experience in:
-- AI/ML systems (LangChain multi-agent, trading algorithms)
-- Crypto/DeFi (Solana, privacy protocols, DEX integrations)
-- Full-stack development (React Native, Python/FastAPI, Rust)
-- Prior projects: AI hedge fund system, DEX arbitrage scanner, privacy payment tools
+## About me
 
-### Grant Ask
+I built this because I own a Seeker and wanted better tooling for managing my portfolio on it. Started as a personal project and grew into something I think other Seeker owners would find useful.
 
-Requesting funding to cover:
-- Seeker device hardware for testing
-- Cloud infrastructure (AI inference, backend hosting)
-- dApp Store listing and marketing
-- Security audit of Seed Vault integration
-
-### Links
-
-- Working demo: Available on request (web preview with phone simulator)
-- GitHub: [repository link]
-- Contact: [email]
-
----
-
-*Built for Solana Seeker. Powered by AI. Secured by Seed Vault.*
+GitHub: github.com/warfield2016/seeker-copilot
+Contact: warfield2016@gmail.com
