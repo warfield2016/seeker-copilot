@@ -32,3 +32,4 @@ npm-debug.*
 web-build/
 yarn-debug.*
 yarn-error.*
+.claude/
