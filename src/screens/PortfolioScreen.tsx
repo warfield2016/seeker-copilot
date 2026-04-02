@@ -117,16 +117,23 @@ export default function PortfolioScreen() {
     }
   }, [watchAddresses]);
 
+  const refreshCtrl = React.useRef({ aborted: false });
+
   useEffect(() => {
     const ctrl = { aborted: false };
+    refreshCtrl.current = ctrl;
     fetchPortfolio(ctrl);
     return () => { ctrl.aborted = true; };
   }, [fetchPortfolio]);
 
   const onRefresh = useCallback(async () => {
+    // Abort any in-flight request before starting new one
+    refreshCtrl.current.aborted = true;
+    const ctrl = { aborted: false };
+    refreshCtrl.current = ctrl;
     setRefreshing(true);
-    await fetchPortfolio({ aborted: false });
-    setRefreshing(false);
+    await fetchPortfolio(ctrl);
+    if (!ctrl.aborted) setRefreshing(false);
   }, [fetchPortfolio]);
 
   if (loading) {

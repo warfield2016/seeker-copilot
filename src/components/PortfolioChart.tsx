@@ -416,6 +416,10 @@ export default React.memo(function PortfolioChart({ currentValue, change24hPerce
         <PieChart tokens={tokens} size={160} />
       ) : (
         <>
+          {/* Prominent simulated data warning */}
+          <View style={styles.simBanner}>
+            <Text style={styles.simBannerText}>SIMULATED DATA — NOT HISTORICAL PRICES</Text>
+          </View>
           <View style={styles.header}>
             <View>
               <Text style={[styles.periodChange, { color }]}>
@@ -494,6 +498,22 @@ const styles = StyleSheet.create({
   },
   periodChange: { fontSize: 18, fontWeight: "800" },
   simLabel: { color: COLORS.textMuted, fontSize: 9, letterSpacing: 0.5, marginTop: 2 },
+  simBanner: {
+    backgroundColor: COLORS.warning + "22",
+    borderWidth: 1,
+    borderColor: COLORS.warning + "66",
+    borderRadius: 6,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    marginBottom: 10,
+    alignItems: "center" as const,
+  },
+  simBannerText: {
+    color: COLORS.warning,
+    fontSize: 10,
+    fontWeight: "700" as const,
+    letterSpacing: 0.8,
+  },
   periods: { flexDirection: "row", gap: 4 },
   periodBtn: {
     paddingHorizontal: 10,

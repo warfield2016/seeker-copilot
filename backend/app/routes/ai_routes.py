@@ -50,7 +50,7 @@ class PortfolioSummaryRequest(BaseModel):
 class AskQuestionRequest(BaseModel):
     wallet_address: str = Field(min_length=32, max_length=64)
     question: str = Field(min_length=1, max_length=500)
-    portfolio_summary: dict
+    portfolio_summary: Optional[dict] = None
 
 
 class RecommendationRequest(BaseModel):

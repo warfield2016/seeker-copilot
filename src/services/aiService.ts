@@ -1,15 +1,22 @@
 import { Portfolio, AIQuery, TradeRecommendation, TrendSignal, ProtocolSafety, DeepAnalysis } from "../types";
 import { API_BASE_URL } from "../config/constants";
 
+const COPILOT_API_KEY = process.env.EXPO_PUBLIC_COPILOT_API_KEY || "";
+
 /**
  * AI Analysis Service - communicates with FastAPI backend
  * for multi-agent orchestrated portfolio analysis.
  */
 class AIService {
   private baseUrl: string;
+  private headers: Record<string, string>;
 
   constructor() {
     this.baseUrl = API_BASE_URL;
+    this.headers = { "Content-Type": "application/json" };
+    if (COPILOT_API_KEY) {
+      this.headers["X-API-Key"] = COPILOT_API_KEY;
+    }
     if (__DEV__) console.log("[AIService] Backend URL:", this.baseUrl);
   }
 
@@ -46,7 +53,7 @@ class AIService {
     try {
       const response = await this.fetchWithRetry(`${this.baseUrl}/api/ai/summary`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: this.headers,
         body: JSON.stringify({
           wallet_address: portfolio.walletAddress,
           total_value_usd: portfolio.totalValueUsd,
@@ -100,7 +107,7 @@ class AIService {
       }
       const response = await this.fetchWithRetry(`${this.baseUrl}/api/ai/ask`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: this.headers,
         body: JSON.stringify(body),
       });
 
@@ -137,7 +144,7 @@ class AIService {
     try {
       const response = await this.fetchWithRetry(`${this.baseUrl}/api/ai/recommendations`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: this.headers,
         body: JSON.stringify({
           wallet_address: portfolio.walletAddress,
           tokens: portfolio.tokens.map((t) => ({
@@ -174,7 +181,7 @@ class AIService {
     try {
       const response = await this.fetchWithRetry(`${this.baseUrl}/api/ai/deep-analysis`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: this.headers,
         body: JSON.stringify({
           wallet_address: portfolio.walletAddress,
           tokens: portfolio.tokens.map((t) => ({
