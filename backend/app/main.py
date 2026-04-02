@@ -70,8 +70,9 @@ async def auth_and_rate_limit(request: Request, call_next):
     return await call_next(request)
 
 
-from app.routes import ai_routes
+from app.routes import ai_routes, proxy_routes
 app.include_router(ai_routes.router, prefix="/api/ai", tags=["AI Analysis"])
+app.include_router(proxy_routes.router, prefix="/api/proxy", tags=["RPC Proxy"])
 
 
 @app.get("/health")

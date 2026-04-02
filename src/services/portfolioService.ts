@@ -1,6 +1,6 @@
 import { Connection, PublicKey } from "@solana/web3.js";
 import { TokenBalance, DeFiPosition, NFTHolding, Portfolio, RiskScore } from "../types";
-import { SKR_MINT, SKR_DECIMALS, SOLANA_RPC_ENDPOINT } from "../config/constants";
+import { SKR_MINT, SKR_DECIMALS, SOLANA_RPC_ENDPOINT, API_BASE_URL } from "../config/constants";
 import { enrichWith24hChanges } from "./priceService";
 
 const FETCH_TIMEOUT_MS = 15000;
@@ -111,7 +111,32 @@ async function fetchWithTimeout(
   }
 }
 
+/** Route RPC calls through backend proxy (API key stays server-side).
+ *  Falls back to direct Helius RPC if backend is unreachable (dev mode). */
 async function heliusRpc(method: string, params: unknown): Promise<unknown> {
+  // Try backend proxy first — no API key in client
+  const proxyUrl = `${API_BASE_URL}/api/proxy/rpc`;
+  try {
+    const proxyResp = await fetchWithTimeout(
+      proxyUrl,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ method, params }),
+      },
+      12000 // shorter timeout for proxy — fallback if backend is down
+    );
+    if (proxyResp.ok) {
+      const json = await proxyResp.json() as { result?: unknown; error?: { message: string } };
+      if (json.error) throw new Error(`RPC: ${json.error.message}`);
+      return json.result;
+    }
+  } catch {
+    // Proxy unavailable — fall back to direct RPC (dev/preview only)
+    if (__DEV__) console.log("[RPC] Proxy unavailable, falling back to direct RPC");
+  }
+
+  // Fallback: direct Helius RPC (only works if EXPO_PUBLIC_HELIUS_RPC_URL is set)
   const response = await fetchWithTimeout(
     SOLANA_RPC_ENDPOINT,
     {
