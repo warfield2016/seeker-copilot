@@ -27,6 +27,8 @@
 /ios
 backend/.env
 backend/.venv/
+__pycache__/
+*.pyc
 dist/
 node_modules/
 npm-debug.*
