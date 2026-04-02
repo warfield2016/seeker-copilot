@@ -67,6 +67,7 @@ function SettingsRow({
 }
 
 export default function SettingsScreen() {
+
   const resetDisclaimer = () => {
     Alert.alert(
       "Reset Disclaimer",
@@ -187,25 +188,25 @@ export default function SettingsScreen() {
         />
       </View>
 
-      {/* Disconnect */}
-      <SectionHeader title="Wallet" />
+      {/* Data Management */}
+      <SectionHeader title="Data" />
       <View style={styles.card}>
         <SettingsRow
-          icon="🔌"
-          label="Disconnect Wallet"
-          sublabel="Sign out and return to connect screen"
+          icon="🗑"
+          label="Clear App Data"
+          sublabel="Remove cached data, watch wallets, and preferences"
           onPress={() => {
             Alert.alert(
-              "Disconnect Wallet",
-              "Are you sure you want to disconnect?",
+              "Clear App Data",
+              "This will remove all cached portfolio data, watch wallets, and preferences. Your connected wallet will not be affected.",
               [
                 { text: "Cancel", style: "cancel" },
                 {
-                  text: "Disconnect",
+                  text: "Clear",
                   style: "destructive",
                   onPress: async () => {
-                    const walletService = (await import("../services/walletService")).default;
-                    await walletService.disconnect().catch(() => null);
+                    await AsyncStorage.clear();
+                    Alert.alert("Done", "App data cleared. Restart the app for changes to take effect.");
                   },
                 },
               ]

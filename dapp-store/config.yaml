@@ -6,11 +6,11 @@
 ##        --requestor-is-authorized --complies-with-solana-dapp-store-policies
 
 publisher:
-  # Your Solana wallet address — fund with 0.2+ SOL before publishing
+  # Your Solana wallet address — fund with 0.5+ SOL before publishing
   address: "<YOUR_PUBLISHER_WALLET_ADDRESS>"
   name: "Seeker AI Labs"
-  website: "https://seekeraiapp.com"
-  support_email: "support@seekeraiapp.com"
+  website: "https://github.com/warfield2016/seeker-copilot"
+  support_email: "warfield2016@gmail.com"
   logo_url: "https://seekeraiapp.com/assets/icon-512.png"
 
 app:
@@ -25,61 +25,82 @@ app:
     trade signals, and security audits — all from one app.
 
     ◎ PORTFOLIO TRACKING
-    • Full token + NFT inventory via Helius DAS
-    • SKR staked balance detection and valuation
+    • Full token + NFT inventory via Helius DAS API
+    • SKR staked balance detection with yield tracking
     • 24h price changes via Birdeye and CoinGecko
-    • Risk score with concentration, volatility, IL, and liquidation metrics
-    • 10 liquid staking tokens auto-detected (mSOL, JitoSOL, bSOL, etc.)
+    • Risk score: concentration, volatility, IL, and liquidation metrics
+    • 10+ liquid staking tokens auto-detected (mSOL, JitoSOL, bSOL, etc.)
+    • Multi-wallet support with bundled portfolio view
 
-    ✦ COPILOT
+    ✦ AI COPILOT
     • Natural language portfolio Q&A
-    • 20 free queries/day — upgrade to 100/day by staking 200 SKR
+    • Unlock Pro tier with 2,000 SKR staked — 20 AI queries per day
 
     ⚡ INTELLIGENCE HUB
     • Trade signals with confidence scoring
     • Market trend intel (momentum, narrative, opportunity, risk)
     • Protocol security scores with audit status
+    • Full methodology documentation
 
     ⬡ SKR PRO TIER
-    • Stake 200+ SKR tokens to unlock Pro tier
-    • 100 queries/day vs 20 free
+    • Stake 2,000+ SKR tokens to unlock Pro tier
+    • 20 AI queries per day for Pro users
     • Direct SKR token utility
+
+    🔐 SECURITY
+    • Never accesses or stores private keys
+    • All signing through Seed Vault on Seeker device
+    • API keys proxied through backend — not in client code
+    • Watch-only wallets stored locally on device
 
     ⚠️ Disclaimer: Analysis is for informational purposes only.
     Not financial advice. Always DYOR.
-  short_description: "Portfolio tracker with risk scoring and trade signals for Solana Seeker"
+  short_description: "Portfolio tracker with AI risk scoring and trade signals for Solana Seeker"
   icon_url: "https://seekeraiapp.com/assets/icon-512.png"
   banner_url: "https://seekeraiapp.com/assets/banner-1200x600.png"
   feature_graphic_url: "https://seekeraiapp.com/assets/feature-1200x1200.png"
   screenshots:
     - url: "https://seekeraiapp.com/assets/screenshots/01-portfolio.png"
-      alt: "Portfolio overview with total value and token holdings"
+      alt: "Portfolio overview with total value, allocation pie chart, and token holdings"
     - url: "https://seekeraiapp.com/assets/screenshots/02-risk-gauge.png"
-      alt: "Risk gauge showing concentration, volatility, and liquidation risk"
+      alt: "Risk gauge showing concentration, volatility, IL, and liquidation risk scoring"
     - url: "https://seekeraiapp.com/assets/screenshots/03-ai-copilot.png"
-      alt: "AI Copilot answering questions about your portfolio"
+      alt: "AI Copilot answering questions about portfolio and crypto"
     - url: "https://seekeraiapp.com/assets/screenshots/04-intel-signals.png"
-      alt: "Intelligence Hub with trade signals and market trends"
+      alt: "Intelligence Hub with trade signals, market trends, and protocol security"
   categories:
     - "Finance"
     - "DeFi"
   locales:
     - "en-US"
   urls:
-    license_url: "https://docs.solanamobile.com/dapp-publishing/dapp-store-sample-eula"
-    privacy_policy_url: "https://seekeraiapp.com/privacy"
-    website_url: "https://seekeraiapp.com"
+    license_url: "https://warfield2016.github.io/seeker-copilot/terms.html"
+    copyright_url: "https://warfield2016.github.io/seeker-copilot/terms.html"
+    privacy_policy_url: "https://warfield2016.github.io/seeker-copilot/privacy.html"
+    website_url: "https://github.com/warfield2016/seeker-copilot"
+
+  testing_instructions: |
+    1. On first launch, accept the disclaimer to proceed.
+    2. Tap "Connect Wallet" to connect via Seed Vault (Mobile Wallet Adapter).
+    3. The portfolio screen loads automatically showing token holdings, NFTs, and risk score.
+    4. Tap the wallet address badge at the top to access wallet management (disconnect, add watch wallets).
+    5. Tap the Allocation pie chart to see individual token allocations with USD values.
+    6. Toggle to Performance to see simulated price chart (real price history requires backend).
+    7. Scroll down to see Holdings (including staked SKR), Collectibles, and Risk Score.
+    8. Navigate to Copilot tab to ask questions about your portfolio or crypto in general.
+    9. Navigate to Intel tab to see AI-generated trade signals, market trends, and protocol security.
+    10. Settings shows SKR Pro tier info, legal documents, and app data management.
+    NOTE: AI features require the backend to be running. The app works in read-only mode without backend.
+    NOTE: The app functions in demo mode on web or without a connected wallet.
 
 release:
   # Generated after running: npx dapp-store create release
   address: ""
-  version: "0.1.0"
-  version_code: 1
+  version: "1.0.0"
+  version_code: 2
   apk_url: "" # Set after EAS build completes
-  # Generated automatically from your EAS build
-  min_sdk_version: 24
+  min_sdk_version: 33
   target_sdk_version: 34
-  # Permissions used by the app
   android_permissions:
     - android.permission.INTERNET
     - android.permission.VIBRATE

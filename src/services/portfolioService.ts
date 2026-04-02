@@ -1,16 +1,101 @@
 import { Connection, PublicKey } from "@solana/web3.js";
 import { TokenBalance, DeFiPosition, NFTHolding, Portfolio, RiskScore } from "../types";
-import { SKR_MINT, SOLANA_RPC_ENDPOINT } from "../config/constants";
+import { SKR_MINT, SKR_DECIMALS, SOLANA_RPC_ENDPOINT } from "../config/constants";
 import { enrichWith24hChanges } from "./priceService";
 
 const FETCH_TIMEOUT_MS = 15000;
 const STABLECOINS = new Set(["USDC", "USDT", "PYUSD", "DAI", "USDD", "TUSD", "FRAX", "USDH", "UXD"]);
 const SOL_MINT = "So11111111111111111111111111111111111111112";
 const SOL_LOGO = "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png";
-// SKR staking program — https://x.com/solanamobile/status/2013796419778511231
-const SKR_STAKING_PROGRAM = "SKRskrmtL83pcL4YqLWt6iPefDqwXQWHSw9S9vz94BZ";
 // Minimum USD value to show a token — filters out spam/dust
 const MIN_TOKEN_VALUE_USD = 0.01;
+
+// SKR staking program — escrow/vault model, tokens leave wallet when staked
+const SKR_STAKING_PROGRAM = new PublicKey("SKRskrmtL83pcL4YqLWt6iPefDqwXQWHSw9S9vz94BZ");
+const SKR_STAKE_CONFIG = "4HQy82s9CHTv1GsYKnANHMiHfhcqesYkK6sB3RDSYyqw";
+// UserStakeEntry: 169 bytes, discriminator 6635a36b098a5799
+// Layout: [0..8] discriminator, [8] bump, [9..41] config, [41..73] user wallet,
+//         [73..105] pool, [105..113] staked_amount (u64), [121..129] reward_per_token_paid (u64),
+//         [153..161] unstake_amount (u64), [161..169] unstake_timestamp (u64)
+const USER_STAKE_ENTRY_SIZE = 169;
+const USER_STAKE_ENTRY_DISCRIMINATOR = "ZjWjawmKeZk="; // base64 of 6635a36b098a5799
+
+// Scam NFT name patterns — phishing airdrops, fake mints, URLs in names
+const SCAM_NFT_PATTERN = /claim|free\s*mint|airdrop|reward|\.com|\.xyz|\.io|\.net|visit\s|redeem/i;
+
+// IPFS gateways in priority order (nftstorage.link deprecated, cloudflare-ipfs.com dead)
+const IPFS_GATEWAYS = [
+  "https://gateway.pinata.cloud/ipfs/",
+  "https://ipfs.io/ipfs/",
+  "https://dweb.link/ipfs/",
+  "https://4everland.io/ipfs/",
+];
+
+/** Read u64 LE from buffer — uses ONLY multiplication (no bitwise ops).
+ *  JS bitwise operators truncate to 32-bit signed ints, corrupting large values.
+ *  Multiplication stays in 64-bit float space (safe up to 2^53). */
+function readU64LE(buf: Buffer | Uint8Array, offset: number): number {
+  const lo = buf[offset] + buf[offset + 1] * 0x100 + buf[offset + 2] * 0x10000 + buf[offset + 3] * 0x1000000;
+  const hi = buf[offset + 4] + buf[offset + 5] * 0x100 + buf[offset + 6] * 0x10000 + buf[offset + 7] * 0x1000000;
+  return lo + hi * 0x100000000;
+}
+
+/** Resolve NFT image URI with reliable IPFS/Arweave gateway conversion */
+function resolveImageUri(asset: DasAsset): string | undefined {
+  // 1. Helius CDN-wrapped links (most reliable)
+  let uri = asset.content?.links?.image;
+
+  // 2. Files array — prefer cdn_uri (Helius CDN) over raw uri
+  if (!uri) {
+    const imageFile = asset.content?.files?.find(
+      (f) => f.mime?.startsWith("image/") || f.uri?.match(/\.(png|jpg|jpeg|gif|webp)/i)
+    );
+    uri = imageFile?.cdn_uri || imageFile?.uri;
+  }
+
+  // 3. Any file with a cdn_uri (might be a thumbnail for video NFTs)
+  if (!uri) {
+    const anyFile = asset.content?.files?.find((f) => f.cdn_uri);
+    uri = anyFile?.cdn_uri;
+  }
+
+  if (!uri) return undefined;
+
+  // Convert IPFS to reliable gateway (Pinata > ipfs.io > dweb.link)
+  if (uri.startsWith("ipfs://")) {
+    const cid = uri.replace("ipfs://", "");
+    uri = IPFS_GATEWAYS[0] + cid;
+  } else if (uri.includes("/ipfs/") && uri.includes("nftstorage.link")) {
+    // Replace deprecated nftstorage.link with Pinata
+    const cid = uri.split("/ipfs/")[1];
+    uri = IPFS_GATEWAYS[0] + cid;
+  }
+
+  // Convert Arweave protocol URIs
+  if (uri.startsWith("ar://")) {
+    uri = "https://arweave.net/" + uri.replace("ar://", "");
+  }
+
+  return uri;
+}
+
+/** Fetch image + animation from off-chain metadata JSON as fallback */
+async function fetchMetadataFromJsonUri(jsonUri: string): Promise<{ image?: string; animation_url?: string }> {
+  try {
+    const resp = await fetchWithTimeout(jsonUri, {}, 5000);
+    if (!resp.ok) return {};
+    const json = await resp.json() as { image?: string; animation_url?: string };
+    let image = json.image;
+    let animation = json.animation_url;
+    if (image?.startsWith("ipfs://")) image = IPFS_GATEWAYS[0] + image.replace("ipfs://", "");
+    if (image?.startsWith("ar://")) image = "https://arweave.net/" + image.replace("ar://", "");
+    if (animation?.startsWith("ipfs://")) animation = IPFS_GATEWAYS[0] + animation.replace("ipfs://", "");
+    if (animation?.startsWith("ar://")) animation = "https://arweave.net/" + animation.replace("ar://", "");
+    return { image, animation_url: animation };
+  } catch {
+    return {};
+  }
+}
 
 async function fetchWithTimeout(
   url: string,
@@ -60,8 +145,8 @@ class PortfolioService {
       displayOptions: {
         showFungible: true,
         showNativeBalance: true,
-        showUnverifiedCollections: false,
-        showCollectionMetadata: false,
+        showUnverifiedCollections: true,  // include all collections (scam filter handles spam)
+        showCollectionMetadata: true,      // get collection names/images
         showInscription: false,
       },
     }) as {
@@ -129,21 +214,62 @@ class PortfolioService {
           logoUri,
         });
 
-      // --- NFTs ---
+      // --- NFTs (blocklist approach: everything not fungible is a potential NFT) ---
+      // Covers V1_NFT, V2_NFT, ProgrammableNFT, LEGACY_NFT, MplCoreAsset,
+      // Token-2022 SBTs (Seeker Genesis Token, Moonbirds SBT), and future types.
       } else if (
-        iface === "V1_NFT" ||
-        iface === "V2_NFT" ||
-        iface === "ProgrammableNFT" ||
-        iface === "LEGACY_NFT"
+        iface !== "FungibleToken" &&
+        iface !== "FungibleAsset"
       ) {
+        // Skip burned NFTs
+        if ((asset as any).burnt) continue;
+
+        const collectionGroup = asset.grouping?.find((g) => g.group_key === "collection");
+        const collection = collectionGroup?.group_value;
+        const name = asset.content?.metadata?.name ?? "Unknown NFT";
+
+        // Skip compressed NFTs without collection (almost always spam)
+        if (asset.compression?.compressed && !collection) continue;
+
+        // Spam detection: flag but don't remove — user can reveal
+        const isSpam = !collection || SCAM_NFT_PATTERN.test(name);
+
+        // Collection name: prefer DAS collection_metadata, then parse from NFT name
+        const collectionMeta = collectionGroup?.collection_metadata;
+        const collectionName = collectionMeta?.name
+          || name.replace(/#\d+\s*$/, "").replace(/\s*\d+\s*$/, "").trim()
+          || undefined;
+
+        // Animation URI: check content.links.animation_url or video files
+        const animationUri = (asset.content?.links as any)?.animation_url
+          || asset.content?.files?.find((f) => f.mime?.startsWith("video/") || f.mime?.startsWith("model/") || f.uri?.match(/\.(mp4|webm|gif|glb)$/i))?.cdn_uri
+          || asset.content?.files?.find((f) => f.mime?.startsWith("video/") || f.mime?.startsWith("model/") || f.uri?.match(/\.(mp4|webm|gif|glb)$/i))?.uri;
+
         nfts.push({
           mint: asset.id,
-          name: asset.content?.metadata?.name ?? "Unknown NFT",
-          collection: asset.grouping?.find((g) => g.group_key === "collection")?.group_value,
-          imageUri: asset.content?.links?.image ?? asset.content?.files?.[0]?.uri,
+          name,
+          collection: collection || "unknown",
+          collectionName,
+          description: asset.content?.metadata?.description,
+          imageUri: resolveImageUri(asset),
+          animationUri: animationUri || undefined,
+          jsonUri: asset.content?.json_uri,
+          isSpam,
           estimatedValueUsd: undefined,
         });
       }
+    }
+
+    // Fallback: fetch images/animations from off-chain JSON for NFTs missing media
+    const missingMedia = nfts.filter((n) => (!n.imageUri || !n.animationUri) && n.jsonUri);
+    if (missingMedia.length > 0) {
+      await Promise.allSettled(
+        missingMedia.slice(0, 20).map(async (nft) => {
+          const meta = await fetchMetadataFromJsonUri(nft.jsonUri!);
+          if (!nft.imageUri && meta.image) nft.imageUri = meta.image;
+          if (!nft.animationUri && meta.animation_url) nft.animationUri = meta.animation_url;
+        })
+      );
     }
 
     // Filter out pure dust (no value, no known price from DAS)
@@ -240,62 +366,100 @@ class PortfolioService {
   }
 
   /**
-   * Fetch staked SKR amount from the SKR staking program.
-   * Searches all accounts owned by the staking program that reference this wallet.
-   * Tries multiple common Anchor account layouts to find the staked amount.
+   * Read staked SKR from on-chain UserStakeEntry accounts.
+   * SKR staking uses an escrow/vault model — tokens leave the wallet.
+   * Each user has a 169-byte PDA with staked_amount at offset 105 (u64, 9 decimals).
+   * Also reads pending unstake amount (offset 153) and reward rate for pending rewards.
    */
-  async getStakedSkr(walletAddress: string): Promise<number> {
+  async getSkrStakeInfo(walletAddress: string): Promise<{ staked: number; liquid: number; pendingUnstake: number; pendingRewards: number }> {
     try {
-      const programId = new PublicKey(SKR_STAKING_PROGRAM);
       const walletPubkey = new PublicKey(walletAddress);
-      const walletBytes = walletPubkey.toBase58();
 
-      // Try multiple offsets where the wallet pubkey might appear in the account data.
-      // Anchor programs typically store: [8-byte discriminator][32-byte authority][...fields]
-      // But some use: [8-byte discriminator][other fields][32-byte authority]
-      const offsets = [8, 32, 40, 72, 104];
-      let matchedAccounts: Array<{ pubkey: PublicKey; account: { data: Buffer; lamports: number; owner: PublicKey } }> = [];
+      // Find UserStakeEntry accounts for this wallet via getProgramAccounts
+      // Wallet pubkey is at offset 41 in the 169-byte account
+      const accounts = await this.connection.getProgramAccounts(SKR_STAKING_PROGRAM, {
+        filters: [
+          { dataSize: USER_STAKE_ENTRY_SIZE },
+          { memcmp: { offset: 41, bytes: walletPubkey.toBase58() } },
+        ],
+      });
 
-      for (const offset of offsets) {
-        try {
-          const accounts = await this.connection.getProgramAccounts(programId, {
-            filters: [
-              { memcmp: { offset, bytes: walletBytes } },
-            ],
-          });
-          if (accounts.length > 0) {
-            matchedAccounts = accounts;
-            break;
-          }
-        } catch { /* try next offset */ }
+      if (accounts.length === 0) {
+        if (__DEV__) console.log(`[SKR] No stake accounts found for ${walletAddress}`);
+        return { staked: 0, liquid: 0, pendingUnstake: 0, pendingRewards: 0 };
       }
 
-      if (matchedAccounts.length === 0) return 0;
+      // Read global reward rate from StakeConfig for pending rewards calculation
+      let globalRewardPerToken = 0;
+      try {
+        const configInfo = await this.connection.getAccountInfo(new PublicKey(SKR_STAKE_CONFIG));
+        if (configInfo?.data) {
+          let configData: Uint8Array;
+          if (Buffer.isBuffer(configInfo.data)) {
+            configData = configInfo.data;
+          } else if ((configInfo.data as any) instanceof Uint8Array) {
+            configData = configInfo.data;
+          } else if (Array.isArray(configInfo.data)) {
+            configData = Buffer.from(configInfo.data[0] as string, "base64");
+          } else {
+            configData = new Uint8Array(0);
+          }
+          if (configData.length >= 145) {
+            globalRewardPerToken = readU64LE(configData, 137);
+          }
+        }
+      } catch { /* non-fatal — rewards will show as 0 */ }
 
-      // Parse staked amount — try reading u64 from multiple possible field positions
       let totalStaked = 0;
-      for (const acc of matchedAccounts) {
-        const data = acc.account.data;
-        // Try every 8-byte aligned offset after the discriminator for a u64 that
-        // looks like a token amount (reasonable range for SKR with 9 decimals)
-        const amountOffsets = [40, 48, 56, 64, 72, 80, 88, 96, 104, 112];
-        for (const amtOffset of amountOffsets) {
-          if (data.length < amtOffset + 8) continue;
-          try {
-            const raw = data.readBigUInt64LE(amtOffset);
-            const amount = Number(raw) / 1e9;
-            // SKR staked amount should be > 0 and reasonable (< 1 billion)
-            if (amount > 0 && amount < 1_000_000_000) {
-              totalStaked += amount;
-              break; // found the amount field for this account
-            }
-          } catch { /* try next offset */ }
+      let totalPendingUnstake = 0;
+      let totalPendingRewards = 0;
+
+      for (const { account } of accounts) {
+        // Ensure data is accessible as byte array (RN may return different types)
+        let data: Uint8Array;
+        if (Buffer.isBuffer(account.data)) {
+          data = account.data;
+        } else if ((account.data as any) instanceof Uint8Array) {
+          data = account.data;
+        } else if (Array.isArray(account.data)) {
+          // @solana/web3.js sometimes returns [base64string, "base64"]
+          data = Buffer.from(account.data[0] as string, "base64");
+        } else {
+          continue;
+        }
+        if (data.length < USER_STAKE_ENTRY_SIZE) continue;
+
+        // staked_amount: u64 at offset 105 (raw lamports — SKR has 6 decimals)
+        const skrDivisor = Math.pow(10, SKR_DECIMALS); // 1e6
+        const stakedRaw = readU64LE(data, 105);
+        const staked = stakedRaw / skrDivisor;
+        totalStaked += staked;
+
+        if (__DEV__) {
+          const rawBytes = Array.from(data.slice(105, 113)).map(b => b.toString(16).padStart(2, '0')).join(' ');
+          console.log(`[SKR] raw @105: ${rawBytes}, rawU64: ${stakedRaw}, ÷1e${SKR_DECIMALS}=${staked} tokens`);
+        }
+
+        // unstake_amount: u64 at offset 153 (tokens in cooldown)
+        const unstakeRaw = readU64LE(data, 153);
+        totalPendingUnstake += unstakeRaw / skrDivisor;
+
+        // Pending rewards: staked_tokens * (global_rate - user_rate) / 1e9
+        // Note: reward rate uses 1e9 precision multiplier (separate from token decimals)
+        if (globalRewardPerToken > 0 && stakedRaw > 0) {
+          const userRewardPerToken = readU64LE(data, 121);
+          const rateDiff = globalRewardPerToken - userRewardPerToken;
+          if (rateDiff > 0) {
+            totalPendingRewards += (staked * rateDiff) / 1e9;
+          }
         }
       }
-      return totalStaked;
+
+      if (__DEV__) console.log(`[SKR] staked=${totalStaked}, pendingUnstake=${totalPendingUnstake}, rewards=${totalPendingRewards} for ${walletAddress}`);
+      return { staked: totalStaked, liquid: 0, pendingUnstake: totalPendingUnstake, pendingRewards: totalPendingRewards };
     } catch (error) {
-      if (__DEV__) console.warn("Failed to fetch staked SKR (non-fatal):", error);
-      return 0;
+      if (__DEV__) console.warn("Failed to check SKR staking (non-fatal):", error);
+      return { staked: 0, liquid: 0, pendingUnstake: 0, pendingRewards: 0 };
     }
   }
 
@@ -306,30 +470,33 @@ class PortfolioService {
   async getPortfolio(walletAddress: string): Promise<Portfolio> {
     const { detectStakedPositions, enrichWithLiveAPY } = await import("./defiDetectionService");
 
-    // Fetch tokens/NFTs and staked SKR in parallel
-    const [{ tokens, nfts }, stakedSkr] = await Promise.all([
+    // Fetch tokens/NFTs and SKR stake info in parallel
+    const [{ tokens, nfts }, skrStakeInfo] = await Promise.all([
       this.getAssets(walletAddress),
-      this.getStakedSkr(walletAddress).catch(() => 0),
+      this.getSkrStakeInfo(walletAddress).catch(() => ({ staked: 0, liquid: 0, pendingUnstake: 0, pendingRewards: 0 })),
     ]);
 
     const skrToken = tokens.find((t) => t.mint === SKR_MINT);
-    const skrPrice = skrToken?.priceUsd ?? 0;
 
     // Detect LST staked positions from token holdings
     const stakedPositions = detectStakedPositions(tokens);
     enrichWithLiveAPY(stakedPositions).catch(() => {}); // fire-and-forget APY enrichment
 
-    // SKR staking is delegation-based: tokens stay in wallet when staked.
-    // The staked tokens are ALREADY counted in `tokens` via DAS/getAssetsByOwner.
-    // Do NOT add stakedSkrValueUsd to totalValueUsd — that would double-count.
-    // The staked amount is tracked separately for UI display only.
+    // SKR staking uses escrow/vault: tokens leave wallet when staked.
+    // Liquid SKR = what DAS reports in wallet. Staked principal + rewards from on-chain PDA.
+    // Staked value is NOT in token balances (tokens left wallet), so add to total.
     const liquidSkrBalance = skrToken?.balance ?? 0;
+    const stakedSkrPrincipal = skrStakeInfo.staked;
+    const stakedSkrRewards = skrStakeInfo.pendingRewards;
+    const totalStakedSkr = stakedSkrPrincipal + stakedSkrRewards;
+    const skrPrice = skrToken?.priceUsd ?? 0;
+    const stakedSkrValueUsd = totalStakedSkr * skrPrice;
 
-    // Token value already includes all tokens (including staked SKR + LSTs)
+    // Token value from DAS (liquid only). Staked SKR left the wallet, add separately.
     const tokenValue = tokens.reduce((sum, t) => sum + t.usdValue, 0);
     const defiPositions: DeFiPosition[] = [];
     const defiValue = defiPositions.reduce((sum, p) => sum + p.valueUsd, 0);
-    const totalValueUsd = tokenValue + defiValue;
+    const totalValueUsd = tokenValue + defiValue + stakedSkrValueUsd;
 
     const change24hUsd = tokens.reduce(
       (sum, t) => sum + (t.usdValue * t.change24h) / 100,
@@ -351,8 +518,75 @@ class PortfolioService {
       stakedSol: 0,
       stakedSolValueUsd: stakedSolValue,
       skrBalance: liquidSkrBalance,
-      skrStaked: stakedSkr,
+      skrStaked: stakedSkrPrincipal,
+      skrStakedRewards: stakedSkrRewards,
+      skrStakedValueUsd: stakedSkrValueUsd,
       stakedPositions,
+      lastUpdated: new Date(),
+    };
+  }
+
+  /**
+   * Fetch and merge portfolios from multiple wallet addresses.
+   * Tokens are merged by mint (balances summed), NFTs concatenated.
+   */
+  async getMultiWalletPortfolio(addresses: string[]): Promise<Portfolio> {
+    const portfolios = await Promise.all(
+      addresses.map((addr) => this.getPortfolio(addr).catch(() => null))
+    );
+    const valid = portfolios.filter(Boolean) as Portfolio[];
+    if (valid.length === 0) throw new Error("Failed to fetch all wallets");
+    if (valid.length === 1) return { ...valid[0], walletAddresses: addresses };
+
+    // Merge tokens by mint — sum balances and USD values
+    const tokenMap = new Map<string, TokenBalance>();
+    for (const p of valid) {
+      for (const t of p.tokens) {
+        const existing = tokenMap.get(t.mint);
+        if (existing) {
+          existing.balance += t.balance;
+          existing.usdValue += t.usdValue;
+        } else {
+          tokenMap.set(t.mint, { ...t });
+        }
+      }
+    }
+    const mergedTokens = Array.from(tokenMap.values()).sort((a, b) => b.usdValue - a.usdValue);
+
+    // Merge NFTs — concatenate, deduplicate by mint
+    const seenMints = new Set<string>();
+    const mergedNfts: NFTHolding[] = [];
+    for (const p of valid) {
+      for (const nft of p.nfts) {
+        if (!seenMints.has(nft.mint)) {
+          seenMints.add(nft.mint);
+          mergedNfts.push(nft);
+        }
+      }
+    }
+
+    // Merge staked positions
+    const mergedStaked = valid.flatMap((p) => p.stakedPositions ?? []);
+
+    const totalValueUsd = mergedTokens.reduce((s, t) => s + t.usdValue, 0);
+    const change24hUsd = mergedTokens.reduce((s, t) => s + (t.usdValue * t.change24h) / 100, 0);
+
+    return {
+      walletAddress: addresses[0],
+      walletAddresses: addresses,
+      totalValueUsd,
+      change24hUsd,
+      change24hPercent: totalValueUsd > 0 ? (change24hUsd / totalValueUsd) * 100 : 0,
+      tokens: mergedTokens,
+      defiPositions: valid.flatMap((p) => p.defiPositions),
+      nfts: mergedNfts,
+      stakedSol: valid.reduce((s, p) => s + p.stakedSol, 0),
+      stakedSolValueUsd: valid.reduce((s, p) => s + p.stakedSolValueUsd, 0),
+      skrBalance: valid.reduce((s, p) => s + p.skrBalance, 0),
+      skrStaked: valid.reduce((s, p) => s + p.skrStaked, 0),
+      skrStakedRewards: valid.reduce((s, p) => s + p.skrStakedRewards, 0),
+      skrStakedValueUsd: valid.reduce((s, p) => s + p.skrStakedValueUsd, 0),
+      stakedPositions: mergedStaked.length > 0 ? mergedStaked : undefined,
       lastUpdated: new Date(),
     };
   }
@@ -383,8 +617,9 @@ interface DasAsset {
       image?: string;
     };
     files?: Array<{ uri?: string; cdn_uri?: string; mime?: string }>;
+    json_uri?: string;
   };
-  grouping?: Array<{ group_key: string; group_value: string }>;
+  grouping?: Array<{ group_key: string; group_value: string; collection_metadata?: { name?: string; image?: string } }>;
   compression?: { compressed: boolean };
 }
 

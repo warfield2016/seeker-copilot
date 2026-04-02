@@ -27,7 +27,12 @@ export interface NFTHolding {
   mint: string;
   name: string;
   collection?: string;
+  collectionName?: string;
+  description?: string;
   imageUri?: string;
+  animationUri?: string;
+  jsonUri?: string;
+  isSpam?: boolean;
   estimatedValueUsd?: number;
 }
 
@@ -55,7 +60,10 @@ export interface Portfolio {
   stakedSolValueUsd: number;
   skrBalance: number;
   skrStaked: number;
+  skrStakedRewards: number;
+  skrStakedValueUsd: number;
   stakedPositions?: StakedPosition[];
+  walletAddresses?: string[];
   lastUpdated: Date;
 }
 

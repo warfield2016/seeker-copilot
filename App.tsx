@@ -1,5 +1,5 @@
 import "./src/utils/polyfills";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, createContext } from "react";
 import { StatusBar } from "expo-status-bar";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
@@ -12,6 +12,19 @@ import AIScreen from "./src/screens/AIScreen";
 import RecommendationsScreen from "./src/screens/RecommendationsScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
 import ErrorBoundary from "./src/components/ErrorBoundary";
+import walletService from "./src/services/walletService";
+
+export const WalletContext = createContext<{
+  disconnect: () => Promise<void>;
+  addWatchAddress: (addr: string) => Promise<void>;
+  removeWatchAddress: (addr: string) => Promise<void>;
+  watchAddresses: string[];
+}>({
+  disconnect: async () => {},
+  addWatchAddress: async () => {},
+  removeWatchAddress: async () => {},
+  watchAddresses: [],
+});
 
 const DISCLAIMER_KEY = "@seeker_copilot_disclaimer_v1";
 
@@ -31,8 +44,9 @@ function TabIcon({ icon, label, focused }: { icon: string; label: string; focuse
   );
 }
 
-function MainApp() {
+function MainApp({ walletCtx }: { walletCtx: React.ContextType<typeof WalletContext> }) {
   return (
+    <WalletContext.Provider value={walletCtx}>
     <NavigationContainer>
       <Tab.Navigator
         screenOptions={{
@@ -79,6 +93,7 @@ function MainApp() {
         />
       </Tab.Navigator>
     </NavigationContainer>
+    </WalletContext.Provider>
   );
 }
 
@@ -144,14 +159,21 @@ function DisclaimerModal({ onAccept }: { onAccept: () => void }) {
   );
 }
 
+const WATCH_WALLETS_KEY = "@seeker_watch_wallets";
+
 export default function App() {
   const [connected, setConnected] = useState(Platform.OS === "web");
   const [disclaimerAccepted, setDisclaimerAccepted] = useState<boolean | null>(null);
+  const [watchAddresses, setWatchAddresses] = useState<string[]>([]);
 
   useEffect(() => {
     AsyncStorage.getItem(DISCLAIMER_KEY).then((val) => {
       setDisclaimerAccepted(val === "true");
     }).catch(() => setDisclaimerAccepted(false));
+    // Load saved watch addresses
+    AsyncStorage.getItem(WATCH_WALLETS_KEY).then((val) => {
+      if (val) setWatchAddresses(JSON.parse(val));
+    }).catch(() => {});
   }, []);
 
   const handleAcceptDisclaimer = async () => {
@@ -159,11 +181,40 @@ export default function App() {
     setDisclaimerAccepted(true);
   };
 
+  const handleDisconnect = useCallback(async () => {
+    await walletService.disconnect().catch(() => null);
+    setConnected(false);
+  }, []);
+
+  const handleAddWatchAddress = useCallback(async (addr: string) => {
+    setWatchAddresses((prev) => {
+      if (prev.includes(addr)) return prev;
+      const updated = [...prev, addr];
+      AsyncStorage.setItem(WATCH_WALLETS_KEY, JSON.stringify(updated)).catch(() => {});
+      return updated;
+    });
+  }, []);
+
+  const handleRemoveWatchAddress = useCallback(async (addr: string) => {
+    setWatchAddresses((prev) => {
+      const updated = prev.filter((a) => a !== addr);
+      AsyncStorage.setItem(WATCH_WALLETS_KEY, JSON.stringify(updated)).catch(() => {});
+      return updated;
+    });
+  }, []);
+
+  const walletCtx = React.useMemo(() => ({
+    disconnect: handleDisconnect,
+    addWatchAddress: handleAddWatchAddress,
+    removeWatchAddress: handleRemoveWatchAddress,
+    watchAddresses,
+  }), [handleDisconnect, handleAddWatchAddress, handleRemoveWatchAddress, watchAddresses]);
+
   // Don't render until disclaimer state is loaded
   if (disclaimerAccepted === null) return null;
 
   const appContent = connected ? (
-    <ErrorBoundary><MainApp /></ErrorBoundary>
+    <ErrorBoundary><MainApp walletCtx={walletCtx} /></ErrorBoundary>
   ) : (
     <ConnectScreen onConnected={() => setConnected(true)} />
   );

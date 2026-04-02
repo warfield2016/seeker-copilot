@@ -1,7 +1,7 @@
 // App configuration constants
 
 export const APP_NAME = "Seeker AI Copilot";
-export const APP_VERSION = "0.1.0";
+export const APP_VERSION = "1.0.0";
 
 // Solana configuration — Helius RPC key via env var, never hardcoded
 // IMPORTANT: Set EXPO_PUBLIC_HELIUS_RPC_URL at build time. Never hardcode API keys.
@@ -12,8 +12,8 @@ export const SOLANA_CLUSTER = "mainnet-beta";
 
 // SKR Token
 export const SKR_MINT = "SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3"; // Official SKR token mint
-export const SKR_DECIMALS = 9;
-export const SKR_STAKE_PRO_THRESHOLD = 200; // 200 SKR staked for Pro tier
+export const SKR_DECIMALS = 6; // SKR token has 6 decimals (confirmed on-chain)
+export const SKR_STAKE_PRO_THRESHOLD = 2000; // 2000 SKR staked for Pro tier
 
 // API endpoints — set EXPO_PUBLIC_API_URL env var for production
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:8000";
@@ -23,8 +23,8 @@ export const BIRDEYE_API_KEY = process.env.EXPO_PUBLIC_BIRDEYE_KEY || "";
 export const COINGECKO_API = "https://api.coingecko.com/api/v3";
 
 // Query limits per day
-export const FREE_QUERIES_PER_DAY = 20;
-export const PRO_QUERIES_PER_DAY = 100;
+export const FREE_QUERIES_PER_DAY = 5;
+export const PRO_QUERIES_PER_DAY = 20;
 
 // UI — Cyberpunk neon palette
 export const COLORS = {

@@ -20,7 +20,7 @@ export default function ShareCard({ portfolio, riskScore }: Props) {
       `${isUp ? "+" : ""}${portfolio.change24hPercent.toFixed(1)}% today`,
       `Top: ${topTokens.map((t) => `${t.symbol} $${t.usdValue.toFixed(0)}`).join(", ")}`,
       riskScore ? `Risk: ${riskScore.overall}/100` : "",
-      `\nTracked with Seeker AI Copilot`,
+      `\nTracked with Seeker AI Copilot\nhttps://store.solanamobile.com/app/com.seekerai.copilot`,
     ].filter(Boolean).join("\n");
 
     if (Platform.OS === "web" && navigator.clipboard) {

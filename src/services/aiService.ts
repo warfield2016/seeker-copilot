@@ -80,25 +80,28 @@ class AIService {
   }
 
   /**
-   * Ask a free-form question about the portfolio
+   * Ask a free-form question — portfolio context is optional for general questions
    */
-  async askQuestion(portfolio: Portfolio, question: string): Promise<AIQuery> {
+  async askQuestion(portfolio: Portfolio | null, question: string): Promise<AIQuery> {
     try {
+      const body: Record<string, unknown> = {
+        wallet_address: portfolio?.walletAddress ?? "general",
+        question,
+      };
+      if (portfolio) {
+        body.portfolio_summary = {
+          total_value: portfolio.totalValueUsd,
+          tokens: portfolio.tokens.map((t) => ({
+            symbol: t.symbol,
+            balance: t.balance,
+            usd_value: t.usdValue,
+          })),
+        };
+      }
       const response = await this.fetchWithRetry(`${this.baseUrl}/api/ai/ask`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          wallet_address: portfolio.walletAddress,
-          question,
-          portfolio_summary: {
-            total_value: portfolio.totalValueUsd,
-            tokens: portfolio.tokens.map((t) => ({
-              symbol: t.symbol,
-              balance: t.balance,
-              usd_value: t.usdValue,
-            })),
-          },
-        }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) throw new Error(`API error: ${response.status}`);

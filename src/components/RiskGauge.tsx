@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Linking } from "react-native";
 import { RiskScore } from "../types";
 import { COLORS } from "../config/constants";
 
@@ -93,6 +93,20 @@ export default function RiskGauge({ riskScore }: Props) {
       {riskScore.details ? (
         <Text style={styles.details}>{riskScore.details}</Text>
       ) : null}
+
+      {/* Methodology description */}
+      <View style={styles.methodBox}>
+        <Text style={styles.methodText}>
+          Weighted score: Concentration 30% + Volatility 30% + IL Risk 20% + Liquidation 20%.
+          Normalized HHI for concentration, stablecoin ratio for volatility.
+        </Text>
+        <TouchableOpacity
+          onPress={() => Linking.openURL("https://github.com/warfield2016/seeker-copilot#risk-scoring")}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.methodLink}>Learn more on GitHub</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -264,5 +278,24 @@ const styles = StyleSheet.create({
     marginTop: 12,
     lineHeight: 16,
     textAlign: "center",
+  },
+  methodBox: {
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    alignItems: "center",
+  },
+  methodText: {
+    color: COLORS.textMuted,
+    fontSize: 10,
+    lineHeight: 15,
+    textAlign: "center",
+  },
+  methodLink: {
+    color: COLORS.primary,
+    fontSize: 11,
+    fontWeight: "600",
+    marginTop: 6,
   },
 });

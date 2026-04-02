@@ -28,7 +28,7 @@ export default function AIChat({ portfolio, userTier, onQueryUsed }: Props) {
   const canQuery = userTier.queriesRemaining > 0;
 
   const handleSend = async () => {
-    if (!input.trim() || !portfolio || !canQuery || loading) return;
+    if (!input.trim() || !canQuery || loading) return;
 
     const question = input.trim();
     setInput("");
@@ -54,12 +54,22 @@ export default function AIChat({ portfolio, userTier, onQueryUsed }: Props) {
     }
   };
 
-  const suggestedQuestions = [
+  const portfolioQuestions = [
     "What's my biggest risk right now?",
     "Should I rebalance my portfolio?",
-    "Which staking protocol has the best yield?",
     "Analyze my SOL concentration risk",
   ];
+
+  const generalQuestions = [
+    "What is liquid staking on Solana?",
+    "What are the top Solana DeFi protocols?",
+    "Explain impermanent loss simply",
+    "How does Solana consensus work?",
+  ];
+
+  const suggestedQuestions = portfolio
+    ? [...portfolioQuestions, generalQuestions[0]]
+    : generalQuestions;
 
   return (
     <KeyboardAvoidingView
@@ -95,7 +105,7 @@ export default function AIChat({ portfolio, userTier, onQueryUsed }: Props) {
         ListHeaderComponent={loading ? (
           <View style={styles.typingIndicator}>
             <View style={styles.aiMessage}>
-              <Text style={styles.typingDots}>Analyzing portfolio...</Text>
+              <Text style={styles.typingDots}>{portfolio ? "Analyzing portfolio..." : "Thinking..."}</Text>
             </View>
           </View>
         ) : null}
@@ -121,7 +131,7 @@ export default function AIChat({ portfolio, userTier, onQueryUsed }: Props) {
           onChangeText={setInput}
           placeholder={
             canQuery
-              ? "Ask about your portfolio..."
+              ? "Ask about your portfolio or crypto in general..."
               : "Daily limit reached. Stake 200 SKR for 100/day."
           }
           placeholderTextColor={COLORS.textSecondary}

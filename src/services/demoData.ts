@@ -129,6 +129,8 @@ export const DEMO_PORTFOLIO: Portfolio = {
   stakedSolValueUsd: 2142.0,
   skrBalance: 5000,
   skrStaked: 200,
+  skrStakedRewards: 9.14,
+  skrStakedValueUsd: 41.83,
   stakedPositions: [
     {
       symbol: "JitoSOL",
