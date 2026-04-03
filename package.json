@@ -23,7 +23,6 @@
     "expo": "~51.0.39",
     "expo-clipboard": "~6.0.3",
     "expo-crypto": "~13.0.2",
-    "expo-dev-client": "~4.0.29",
     "expo-haptics": "~13.0.1",
     "expo-linear-gradient": "~13.0.2",
     "expo-status-bar": "~1.12.1",
@@ -40,6 +39,7 @@
     "@expo/webpack-config": "^19.0.1",
     "@types/react": "~18.2.79",
     "eas-cli": "^18.4.0",
+    "expo-dev-client": "~4.0.29",
     "typescript": "~5.3.3"
   },
   "private": true

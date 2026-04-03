@@ -111,10 +111,9 @@ async function fetchWithTimeout(
   }
 }
 
-/** Route RPC calls through backend proxy (API key stays server-side).
- *  Falls back to direct Helius RPC if backend is unreachable (dev mode). */
+/** Route ALL RPC calls through backend proxy — zero API keys in client.
+ *  In dev mode only, falls back to direct RPC for local development. */
 async function heliusRpc(method: string, params: unknown): Promise<unknown> {
-  // Try backend proxy first — no API key in client
   const proxyUrl = `${API_BASE_URL}/api/proxy/rpc`;
   try {
     const proxyResp = await fetchWithTimeout(
@@ -124,31 +123,30 @@ async function heliusRpc(method: string, params: unknown): Promise<unknown> {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ method, params }),
       },
-      12000 // shorter timeout for proxy — fallback if backend is down
     );
-    if (proxyResp.ok) {
-      const json = await proxyResp.json() as { result?: unknown; error?: { message: string } };
-      if (json.error) throw new Error(`RPC: ${json.error.message}`);
+    if (!proxyResp.ok) throw new Error(`Proxy error: ${proxyResp.status}`);
+    const json = await proxyResp.json() as { result?: unknown; error?: { message: string } };
+    if (json.error) throw new Error(`RPC: ${json.error.message}`);
+    return json.result;
+  } catch (proxyErr) {
+    // Dev-only fallback: direct RPC for local development without backend
+    if (__DEV__ && SOLANA_RPC_ENDPOINT && !SOLANA_RPC_ENDPOINT.includes("YOUR_HELIUS_KEY")) {
+      if (__DEV__) console.log("[RPC] Proxy unavailable, dev fallback to direct RPC");
+      const response = await fetchWithTimeout(
+        SOLANA_RPC_ENDPOINT,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ jsonrpc: "2.0", id: "seeker-copilot", method, params }),
+        }
+      );
+      if (!response.ok) throw new Error(`Helius RPC error: ${response.status}`);
+      const json = await response.json() as { result?: unknown; error?: { message: string } };
+      if (json.error) throw new Error(`Helius RPC: ${json.error.message}`);
       return json.result;
     }
-  } catch {
-    // Proxy unavailable — fall back to direct RPC (dev/preview only)
-    if (__DEV__) console.log("[RPC] Proxy unavailable, falling back to direct RPC");
+    throw proxyErr; // In production, fail if proxy is down
   }
-
-  // Fallback: direct Helius RPC (only works if EXPO_PUBLIC_HELIUS_RPC_URL is set)
-  const response = await fetchWithTimeout(
-    SOLANA_RPC_ENDPOINT,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ jsonrpc: "2.0", id: "seeker-copilot", method, params }),
-    }
-  );
-  if (!response.ok) throw new Error(`Helius RPC error: ${response.status}`);
-  const json = await response.json() as { result?: unknown; error?: { message: string } };
-  if (json.error) throw new Error(`Helius RPC: ${json.error.message}`);
-  return json.result;
 }
 
 class PortfolioService {

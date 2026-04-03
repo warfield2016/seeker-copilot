@@ -48,7 +48,7 @@ class PortfolioSummaryRequest(BaseModel):
 
 
 class AskQuestionRequest(BaseModel):
-    wallet_address: str = Field(min_length=32, max_length=64)
+    wallet_address: str = Field(min_length=1, max_length=64)  # "general" for guest mode
     question: str = Field(min_length=1, max_length=500)
     portfolio_summary: Optional[dict] = None
 
