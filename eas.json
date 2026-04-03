@@ -16,7 +16,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://web-production-248e9.up.railway.app"
+        "EXPO_PUBLIC_API_URL": "https://seeker-copilot-production.up.railway.app"
       }
     },
     "production": {
@@ -26,7 +26,7 @@
         "credentialsSource": "remote"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://web-production-248e9.up.railway.app"
+        "EXPO_PUBLIC_API_URL": "https://seeker-copilot-production.up.railway.app"
       }
     }
   },
