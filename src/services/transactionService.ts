@@ -1,27 +1,12 @@
 /**
- * Transaction Service — Helius Enhanced Transaction History
- *
- * Uses Helius's Enhanced Transactions API to fetch human-readable
- * transaction history. Returns structured data with type, description,
- * and token transfer info — ready for AI explanations.
- *
- * Docs: https://www.helius.dev/docs/enhanced-transactions-api
+ * Transaction Service — fetches transaction history via backend proxy.
+ * No API keys in client — all requests go through /api/proxy/rpc.
  */
 
-import { HELIUS_API_URL, SOLANA_RPC_ENDPOINT } from "../config/constants";
+import { API_BASE_URL } from "../config/constants";
 
 const FETCH_TIMEOUT_MS = 12000;
 const MAX_TRANSACTIONS = 20;
-
-// Extract API key from the RPC endpoint URL
-function getHeliusApiKey(): string {
-  try {
-    const url = new URL(SOLANA_RPC_ENDPOINT);
-    return url.searchParams.get("api-key") ?? "";
-  } catch {
-    return "";
-  }
-}
 
 async function fetchWithTimeout(url: string, options: RequestInit = {}): Promise<Response> {
   const controller = new AbortController();
@@ -54,41 +39,63 @@ export interface ParsedTransaction {
 }
 
 /**
- * Fetch human-readable transaction history for a wallet.
- * Uses Helius Enhanced Transactions API.
+ * Fetch transaction signatures via backend RPC proxy, then fetch details.
+ * No API keys leave the client — everything goes through the backend.
  */
 export async function getTransactionHistory(
   walletAddress: string,
   limit: number = MAX_TRANSACTIONS
 ): Promise<ParsedTransaction[]> {
-  const apiKey = getHeliusApiKey();
-  if (!apiKey) return [];
-
   try {
-    const url = (
-      `${HELIUS_API_URL}/transactions`
-      + `?api-key=${apiKey}`
-      + `&address=${walletAddress}`
-      + `&limit=${Math.min(limit, MAX_TRANSACTIONS)}`
-      + `&type=SWAP,TRANSFER,NFT_SALE,NFT_MINT,STAKE_SOL,UNSTAKE_SOL`
-    );
+    const proxyUrl = `${API_BASE_URL}/api/proxy/rpc`;
 
-    const response = await fetchWithTimeout(url);
-    if (!response.ok) return [];
+    // Step 1: Get recent signatures
+    const sigResp = await fetchWithTimeout(proxyUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        method: "getSignaturesForAddress",
+        params: [walletAddress, { limit: Math.min(limit, MAX_TRANSACTIONS) }],
+      }),
+    });
+    if (!sigResp.ok) return [];
+    const sigJson = await sigResp.json();
+    const signatures: Array<{ signature: string }> = sigJson.result ?? [];
+    if (signatures.length === 0) return [];
 
-    const data = await response.json();
-    if (!Array.isArray(data)) return [];
+    // Step 2: Fetch each transaction's details
+    const txPromises = signatures.slice(0, 10).map(async (sig) => {
+      try {
+        const txResp = await fetchWithTimeout(proxyUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            method: "getTransaction",
+            params: [sig.signature, { encoding: "jsonParsed", maxSupportedTransactionVersion: 0 }],
+          }),
+        });
+        if (!txResp.ok) return null;
+        const txJson = await txResp.json();
+        const tx = txJson.result;
+        if (!tx) return null;
 
-    return data.map((tx: Record<string, unknown>) => ({
-      signature:      (tx.signature as string) ?? "",
-      timestamp:      (tx.timestamp as number) ?? 0,
-      type:           (tx.type as string) ?? "UNKNOWN",
-      description:    (tx.description as string) ?? "",
-      fee:            (tx.fee as number) ?? 0,
-      source:         (tx.source as string) ?? "",
-      tokenTransfers: Array.isArray(tx.tokenTransfers) ? tx.tokenTransfers as ParsedTransaction["tokenTransfers"] : [],
-      nativeTransfers: Array.isArray(tx.nativeTransfers) ? tx.nativeTransfers as ParsedTransaction["nativeTransfers"] : [],
-    }));
+        return {
+          signature: sig.signature,
+          timestamp: tx.blockTime ?? 0,
+          type: "TRANSFER",
+          description: `Transaction ${sig.signature.slice(0, 8)}...`,
+          fee: (tx.meta?.fee ?? 0) / 1e9,
+          source: "solana",
+          tokenTransfers: [] as ParsedTransaction["tokenTransfers"],
+          nativeTransfers: [] as ParsedTransaction["nativeTransfers"],
+        };
+      } catch {
+        return null;
+      }
+    });
+
+    const results = await Promise.all(txPromises);
+    return results.filter(Boolean) as ParsedTransaction[];
   } catch {
     return [];
   }

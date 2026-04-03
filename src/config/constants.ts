@@ -17,7 +17,7 @@ export const SKR_STAKE_PRO_THRESHOLD = 2000; // 2000 SKR staked for Pro tier
 
 // API endpoints — set EXPO_PUBLIC_API_URL env var for production
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:8000";
-export const HELIUS_API_URL = "https://api.helius.xyz/v0";
+// HELIUS_API_URL removed — all Helius calls go through backend proxy
 export const BIRDEYE_API_URL = "https://public-api.birdeye.so";
 export const BIRDEYE_API_KEY = process.env.EXPO_PUBLIC_BIRDEYE_KEY || "";
 export const COINGECKO_API = "https://api.coingecko.com/api/v3";

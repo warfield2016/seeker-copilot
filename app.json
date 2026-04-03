@@ -28,7 +28,11 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "package": "com.seekerai.copilot",
-      "softwareKeyboardLayoutMode": "pan"
+      "softwareKeyboardLayoutMode": "pan",
+      "permissions": [
+        "INTERNET",
+        "VIBRATE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
