@@ -132,7 +132,7 @@ export default function AIChat({ portfolio, userTier, onQueryUsed }: Props) {
           placeholder={
             canQuery
               ? "Ask about your portfolio or crypto in general..."
-              : "Daily limit reached. Stake 200 SKR for 100/day."
+              : "Daily limit reached. Stake 2,000 SKR for Pro (20/day)."
           }
           placeholderTextColor={COLORS.textSecondary}
           editable={canQuery && !loading}

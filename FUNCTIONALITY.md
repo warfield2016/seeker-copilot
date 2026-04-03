@@ -36,7 +36,7 @@ Seeker AI Copilot is a portfolio intelligence platform built exclusively for the
 - **Natural language Q&A** about your portfolio
 - Multi-agent backend processes questions through 4 specialized agents
 - Suggested questions on first load
-- Query counter with daily limits (Free: 20/day, Pro: 100/day)
+- Query counter with daily limits (Free: 5/day, Pro: 20/day with 2,000+ SKR staked)
 - Multi-provider LLM backend (configurable via environment variables)
 
 ### 4. Intelligence Hub
@@ -86,8 +86,8 @@ Three-tab analysis dashboard:
 
 | Tier | Requirement | AI Queries/Day |
 |------|-------------|----------------|
-| Free | None | 20 |
-| Pro | Stake 200+ SKR | 100 |
+| Free | None | 5 |
+| Pro | Stake 2,000+ SKR | 20 |
 
 SKR staking provides direct utility within the app — more daily AI queries for deeper portfolio analysis.
 

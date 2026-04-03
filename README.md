@@ -30,7 +30,7 @@ Four specialized agents run in parallel:
 ### Copilot Chat
 - Natural language Q&A about your portfolio
 - Contextual suggested questions
-- Query limits: Free (20/day), Pro (100/day with 200+ SKR staked)
+- Query limits: Free (5/day), Pro (20/day with 2,000+ SKR staked)
 - Retry logic with exponential backoff
 
 ### Settings

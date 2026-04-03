@@ -36,7 +36,7 @@ There's no portfolio intelligence app in the Solana dApp Store. Jupiter, Backpac
 
 **Copilot chat**
 - Ask questions about your portfolio in plain language
-- 20 queries/day free, 100/day with 200+ SKR staked
+- 5 queries/day free, 20/day with 2,000+ SKR staked
 - Contextual suggested questions based on your holdings
 
 ## How it uses Solana Mobile Stack
@@ -45,7 +45,7 @@ There's no portfolio intelligence app in the Solana dApp Store. Jupiter, Backpac
 |---|---|
 | Mobile Wallet Adapter v2 | Wallet connection and authorization |
 | Seed Vault | Secure key storage, no private keys in the app |
-| SKR token | Staking gates Pro tier, 200+ SKR = 5x more queries |
+| SKR token | Staking gates Pro tier, 2,000+ SKR = 4x more queries |
 | Seeker hardware | Optimized for 393x873 resolution, AMOLED dark theme |
 
 ## Tech stack

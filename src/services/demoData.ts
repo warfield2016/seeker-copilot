@@ -201,7 +201,7 @@ export const DEMO_RECOMMENDATIONS: TradeRecommendation[] = [
   {
     action: "buy",
     token: "SKR",
-    reason: "Trend signal: Seeker ecosystem gaining momentum. You have 200 SKR staked at Pro threshold. Increasing stake improves Guardian rewards and governance weight.",
+    reason: "Trend signal: Seeker ecosystem gaining momentum. You have 2,000 SKR staked at Pro threshold. Increasing stake improves Guardian rewards and governance weight.",
     confidence: 75,
   },
   {
