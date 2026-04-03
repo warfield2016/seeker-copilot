@@ -59,8 +59,8 @@ Three-tab analysis dashboard:
 ### Frontend
 - **React Native** (Expo SDK 51) + TypeScript
 - Bottom tab navigation (react-navigation)
-- react-native-reanimated for 60fps animations
-- expo-haptics for tactile feedback
+- React Native Animated API for smooth transitions
+- Pure View-based charts (no SVG dependency)
 - Shimmer skeleton loading states
 - Responsive design for Seeker's 393x873 logical resolution
 
@@ -159,7 +159,7 @@ Jupiter (92), Jito (91), Marinade (90), Kamino (88), Orca (87), Drift (85), Mete
 
 - [x] Financial disclaimer modal (first launch)
 - [x] Privacy Policy, Terms, EULA links in Settings
-- [x] versionCode: 1 in app.json
+- [x] versionCode: 2, version: 1.0.0 in app.json
 - [x] dapp-store/config.yaml initialized
 - [x] Production APK with release signing key
 - [x] Backend deployed (Railway)

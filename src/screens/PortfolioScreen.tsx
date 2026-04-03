@@ -123,7 +123,7 @@ export default function PortfolioScreen() {
     const ctrl = { aborted: false };
     refreshCtrl.current = ctrl;
     fetchPortfolio(ctrl);
-    return () => { ctrl.aborted = true; };
+    return () => { ctrl.aborted = true; refreshCtrl.current.aborted = true; };
   }, [fetchPortfolio]);
 
   const onRefresh = useCallback(async () => {
@@ -354,7 +354,7 @@ export default function PortfolioScreen() {
                   <Text style={styles.defiType}>{pos.type.toUpperCase()}</Text>
                 </View>
                 <View style={styles.defiRight}>
-                  <Text style={styles.defiValue}>${pos.valueUsd.toFixed(2)}</Text>
+                  <Text style={styles.defiValue}>${pos.valueUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
                   {pos.apy != null && <Text style={styles.defiApy}>{pos.apy.toFixed(1)}% APY</Text>}
                   {pos.unrealizedPnl != null && (
                     <Text style={[styles.defiPnl, { color: pos.unrealizedPnl >= 0 ? COLORS.success : COLORS.danger }]}>

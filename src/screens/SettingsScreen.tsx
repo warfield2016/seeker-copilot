@@ -9,9 +9,7 @@ import {
   Alert,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { COLORS, APP_NAME, APP_VERSION, FREE_QUERIES_PER_DAY, PRO_QUERIES_PER_DAY, SKR_STAKE_PRO_THRESHOLD } from "../config/constants";
-
-const DISCLAIMER_KEY = "@seeker_copilot_disclaimer_v1";
+import { COLORS, APP_NAME, APP_VERSION, FREE_QUERIES_PER_DAY, PRO_QUERIES_PER_DAY, SKR_STAKE_PRO_THRESHOLD, DISCLAIMER_KEY } from "../config/constants";
 
 const LINKS = {
   privacy: "https://warfield2016.github.io/seeker-copilot/privacy.html",

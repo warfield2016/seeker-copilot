@@ -16,11 +16,14 @@ export const SKR_DECIMALS = 6; // SKR token has 6 decimals (confirmed on-chain)
 export const SKR_STAKE_PRO_THRESHOLD = 2000; // 2000 SKR staked for Pro tier
 
 // API endpoints — set EXPO_PUBLIC_API_URL env var for production
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:8000";
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || "https://seeker-copilot-production.up.railway.app";
 // HELIUS_API_URL removed — all Helius calls go through backend proxy
 export const BIRDEYE_API_URL = "https://public-api.birdeye.so";
 export const BIRDEYE_API_KEY = process.env.EXPO_PUBLIC_BIRDEYE_KEY || "";
 export const COINGECKO_API = "https://api.coingecko.com/api/v3";
+
+// Storage keys
+export const DISCLAIMER_KEY = "@seeker_copilot_disclaimer_v1";
 
 // Query limits per day
 export const FREE_QUERIES_PER_DAY = 5;

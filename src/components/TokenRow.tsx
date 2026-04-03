@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   price: {
-    color: "#6E7681",
+    color: COLORS.textMuted,
     fontSize: 11,
     marginTop: 1,
   },

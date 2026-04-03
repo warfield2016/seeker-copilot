@@ -78,7 +78,7 @@ seeker-ai-copilot/
       aiService.ts                 # Backend API communication
       priceService.ts              # Birdeye + CoinGecko price enrichment
       walletService.ts             # MWA connection
-      transactionService.ts        # Helius Enhanced Transactions
+      transactionService.ts        # Transaction history via RPC proxy
       defiDetectionService.ts      # LST detection by mint address
       demoData.ts                  # Demo portfolio for web preview
   backend/

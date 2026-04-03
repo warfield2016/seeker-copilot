@@ -60,7 +60,7 @@ export const DEMO_PORTFOLIO: Portfolio = {
       symbol: "SKR",
       name: "Seeker",
       balance: 5000,
-      decimals: 9,
+      decimals: 6,
       usdValue: 245.0,
       priceUsd: 0.049,
       change24h: -2.3,
@@ -128,9 +128,9 @@ export const DEMO_PORTFOLIO: Portfolio = {
   stakedSol: 10.5,
   stakedSolValueUsd: 2142.0,
   skrBalance: 5000,
-  skrStaked: 200,
-  skrStakedRewards: 9.14,
-  skrStakedValueUsd: 41.83,
+  skrStaked: 2000,
+  skrStakedRewards: 91.4,
+  skrStakedValueUsd: 102.35,
   stakedPositions: [
     {
       symbol: "JitoSOL",

@@ -21,9 +21,10 @@ Trade Generator runs AFTER, consuming their outputs.
 Inspired by agency-agents/specialized/agents-orchestrator.md
 """
 import asyncio
+import json
 import time
 import logging
-from app.agents.base import invoke_agent
+from app.agents.base import invoke_agent, sanitize_input
 from app.agents.risk_analyst import RiskAnalyst
 from app.agents.trend_researcher import TrendResearcher
 from app.agents.security_auditor import SecurityAuditor
@@ -106,8 +107,6 @@ class Orchestrator:
                             skr_balance: float = 0, skr_staked: float = 0,
                             total_value: float = 0, change_24h: float = 0) -> str:
         """Fast single-agent summary for the portfolio overview card."""
-        from app.agents.base import invoke_agent
-        import json
 
         system = """You are an elite Solana portfolio analyst powering Seeker Copilot.
 
@@ -140,8 +139,6 @@ Rules:
 
     async def answer_question(self, question: str, portfolio: dict) -> str:
         """Answer a free-form question with full context."""
-        from app.agents.base import sanitize_input
-        import json
 
         system = """You are an elite Solana portfolio analyst powering Seeker Copilot.
 

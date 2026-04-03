@@ -1,10 +1,10 @@
-# Seeker Copilot — Solana Mobile Builder Grant Application
+# Copilot — Solana Mobile Builder Grant Application
 
 ## What is it
 
-Seeker Copilot is a portfolio tracker and analysis tool built for the Solana Seeker phone. It connects through Mobile Wallet Adapter and Seed Vault, pulls your entire portfolio from Helius DAS, and runs multi-agent analysis to give you risk scores, trade signals, and security audits on your phone in real time.
+Copilot is a portfolio tracker and analysis tool built for the Solana Seeker phone. It connects through Mobile Wallet Adapter and Seed Vault, pulls your entire portfolio from Helius DAS, and runs multi-agent analysis to give you risk scores, trade signals, and security audits on your phone in real time.
 
-The app detects SKR staking and gates a Pro tier behind staking 200+ SKR. That gives the token direct utility inside the app.
+The app detects SKR staking and gates a Pro tier behind staking 2,000+ SKR. That gives the token direct utility inside the app.
 
 ## The problem
 
@@ -98,7 +98,7 @@ There's no portfolio intelligence app in the Solana dApp Store. Jupiter, Backpac
 
 ## Why this matters for the Seeker ecosystem
 
-Every phone platform needs a portfolio tracker that feels native. On iPhone its Delta or Zerion. On Seeker nothing like this exists yet.
+Every phone platform needs a portfolio tracker that feels native. On iPhone it's Delta or Zerion. On Seeker, nothing like this exists yet.
 
 This app gives SKR holders a reason to stake not for speculative yield but for direct utility inside an app they use daily. That kind of token usage is what makes the Seeker ecosystem sticky.
 

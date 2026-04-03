@@ -7,7 +7,7 @@
 
 publisher:
   address: "<YOUR_PUBLISHER_WALLET_ADDRESS>"
-  name: "Seeker AI Copilot"
+  name: "Copilot"
   website: "https://github.com/warfield2016/seeker-copilot"
   support_email: "warfield2016@gmail.com"
   ## NOTE: Upload icon directly in Publisher Portal UI — no external URL needed.
@@ -16,10 +16,10 @@ publisher:
 
 app:
   address: ""
-  name: "Seeker AI Copilot"
+  name: "Copilot"
   android_package: "com.seekerai.copilot"
   description: |
-    Seeker AI Copilot — Solana portfolio intelligence built for the Seeker phone.
+    Copilot — Solana portfolio intelligence built for the Seeker phone.
 
     The only AI-powered portfolio analyzer on the Solana dApp Store.
     Track your entire portfolio, get risk scoring, trade signals,
@@ -98,7 +98,7 @@ app:
     8. Navigate to Copilot tab — ask "What's my biggest risk?" to test AI Q&A (5 free/day).
     9. Navigate to Intel tab to see AI trade signals, trends, and protocol security scores.
     10. Settings shows SKR Pro tier info, legal links, and Clear App Data option.
-    NOTE: AI features require the backend at web-production-248e9.up.railway.app.
+    NOTE: AI features require the backend at seeker-copilot-production.up.railway.app.
     NOTE: The app works in demo mode without a connected wallet.
 
 release:

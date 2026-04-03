@@ -401,18 +401,19 @@ class PortfolioService {
    */
   async getSkrStakeInfo(walletAddress: string): Promise<{ staked: number; liquid: number; pendingUnstake: number; pendingRewards: number }> {
     try {
-      const walletPubkey = new PublicKey(walletAddress);
+      // Use heliusRpc (backend proxy) instead of this.connection — avoids broken RPC URL
+      const result = await heliusRpc("getProgramAccounts", [
+        SKR_STAKING_PROGRAM.toBase58(),
+        {
+          encoding: "base64",
+          filters: [
+            { dataSize: USER_STAKE_ENTRY_SIZE },
+            { memcmp: { offset: 41, bytes: walletAddress } },
+          ],
+        },
+      ]) as Array<{ pubkey: string; account: { data: [string, string] } }>;
 
-      // Find UserStakeEntry accounts for this wallet via getProgramAccounts
-      // Wallet pubkey is at offset 41 in the 169-byte account
-      const accounts = await this.connection.getProgramAccounts(SKR_STAKING_PROGRAM, {
-        filters: [
-          { dataSize: USER_STAKE_ENTRY_SIZE },
-          { memcmp: { offset: 41, bytes: walletPubkey.toBase58() } },
-        ],
-      });
-
-      if (accounts.length === 0) {
+      if (!result || result.length === 0) {
         if (__DEV__) console.log(`[SKR] No stake accounts found for ${walletAddress}`);
         return { staked: 0, liquid: 0, pendingUnstake: 0, pendingRewards: 0 };
       }
@@ -420,18 +421,12 @@ class PortfolioService {
       // Read global reward rate from StakeConfig for pending rewards calculation
       let globalRewardPerToken = 0;
       try {
-        const configInfo = await this.connection.getAccountInfo(new PublicKey(SKR_STAKE_CONFIG));
-        if (configInfo?.data) {
-          let configData: Uint8Array;
-          if (Buffer.isBuffer(configInfo.data)) {
-            configData = configInfo.data;
-          } else if ((configInfo.data as any) instanceof Uint8Array) {
-            configData = configInfo.data;
-          } else if (Array.isArray(configInfo.data)) {
-            configData = Buffer.from(configInfo.data[0] as string, "base64");
-          } else {
-            configData = new Uint8Array(0);
-          }
+        const configResult = await heliusRpc("getAccountInfo", [
+          SKR_STAKE_CONFIG,
+          { encoding: "base64" },
+        ]) as { value?: { data: [string, string] } } | null;
+        if (configResult?.value?.data) {
+          const configData = Buffer.from(configResult.value.data[0], "base64");
           if (configData.length >= 145) {
             globalRewardPerToken = readU64LE(configData, 137);
           }
@@ -442,19 +437,8 @@ class PortfolioService {
       let totalPendingUnstake = 0;
       let totalPendingRewards = 0;
 
-      for (const { account } of accounts) {
-        // Ensure data is accessible as byte array (RN may return different types)
-        let data: Uint8Array;
-        if (Buffer.isBuffer(account.data)) {
-          data = account.data;
-        } else if ((account.data as any) instanceof Uint8Array) {
-          data = account.data;
-        } else if (Array.isArray(account.data)) {
-          // @solana/web3.js sometimes returns [base64string, "base64"]
-          data = Buffer.from(account.data[0] as string, "base64");
-        } else {
-          continue;
-        }
+      for (const acct of result) {
+        const data = Buffer.from(acct.account.data[0], "base64");
         if (data.length < USER_STAKE_ENTRY_SIZE) continue;
 
         // staked_amount: u64 at offset 105 (raw lamports — SKR has 6 decimals)
