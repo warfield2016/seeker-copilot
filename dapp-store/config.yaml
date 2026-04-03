@@ -6,23 +6,24 @@
 ##        --requestor-is-authorized --complies-with-solana-dapp-store-policies
 
 publisher:
-  # Your Solana wallet address — fund with 0.5+ SOL before publishing
   address: "<YOUR_PUBLISHER_WALLET_ADDRESS>"
-  name: "Seeker AI Labs"
+  name: "Seeker AI Copilot"
   website: "https://github.com/warfield2016/seeker-copilot"
   support_email: "warfield2016@gmail.com"
-  logo_url: "https://seekeraiapp.com/assets/icon-512.png"
+  ## NOTE: Upload icon directly in Publisher Portal UI — no external URL needed.
+  ## If using CLI, host icon at GitHub Pages first:
+  ## logo_url: "https://warfield2016.github.io/seeker-copilot/assets/icon-512.png"
 
 app:
-  # Generated after running: npx dapp-store create app
   address: ""
   name: "Seeker AI Copilot"
   android_package: "com.seekerai.copilot"
   description: |
-    Solana portfolio intelligence built for the Seeker phone.
+    Seeker AI Copilot — Solana portfolio intelligence built for the Seeker phone.
 
-    Track your entire portfolio in real-time, get risk scoring,
-    trade signals, and security audits — all from one app.
+    The only AI-powered portfolio analyzer on the Solana dApp Store.
+    Track your entire portfolio, get risk scoring, trade signals,
+    and security audits — all from one app.
 
     ◎ PORTFOLIO TRACKING
     • Full token + NFT inventory via Helius DAS API
@@ -31,43 +32,50 @@ app:
     • Risk score: concentration, volatility, IL, and liquidation metrics
     • 10+ liquid staking tokens auto-detected (mSOL, JitoSOL, bSOL, etc.)
     • Multi-wallet support with bundled portfolio view
+    • Interactive allocation pie chart with tap-to-explore
 
     ✦ AI COPILOT
-    • Natural language portfolio Q&A
-    • Unlock Pro tier with 2,000 SKR staked — 20 AI queries per day
+    • Natural language portfolio Q&A — ask anything about your holdings
+    • 5 free AI queries per day for all users
+    • Stake 2,000+ SKR to unlock Pro tier: 20 AI queries per day
+    • Answers general crypto and Solana questions too
 
     ⚡ INTELLIGENCE HUB
-    • Trade signals with confidence scoring
+    • 4 specialized AI agents analyze your portfolio in parallel
+    • Trade signals with confidence scoring (buy, sell, hold, rebalance)
     • Market trend intel (momentum, narrative, opportunity, risk)
     • Protocol security scores with audit status
-    • Full methodology documentation
+    • Full methodology documentation in "How It Works" tab
 
-    ⬡ SKR PRO TIER
+    ⬡ SKR UTILITY
     • Stake 2,000+ SKR tokens to unlock Pro tier
-    • 20 AI queries per day for Pro users
-    • Direct SKR token utility
+    • Pro: 20 AI queries/day (vs 5 free)
+    • Direct Seeker token utility — built for the SKR ecosystem
 
     🔐 SECURITY
     • Never accesses or stores private keys
-    • All signing through Seed Vault on Seeker device
-    • API keys proxied through backend — not in client code
-    • Watch-only wallets stored locally on device
+    • All signing through Seed Vault on your Seeker device
+    • All API calls proxied through backend — zero keys in client
+    • Watch-only wallets stored locally on device only
+
+    🗺️ ROADMAP
+    • In-app token swaps via Jupiter integration
+    • Transaction history view
+    • Real-time price charts
+    • Push notifications for price alerts
+    • Portfolio performance tracking with historical data
 
     ⚠️ Disclaimer: Analysis is for informational purposes only.
     Not financial advice. Always DYOR.
-  short_description: "Portfolio tracker with AI risk scoring and trade signals for Solana Seeker"
-  icon_url: "https://seekeraiapp.com/assets/icon-512.png"
-  banner_url: "https://seekeraiapp.com/assets/banner-1200x600.png"
-  feature_graphic_url: "https://seekeraiapp.com/assets/feature-1200x1200.png"
-  screenshots:
-    - url: "https://seekeraiapp.com/assets/screenshots/01-portfolio.png"
-      alt: "Portfolio overview with total value, allocation pie chart, and token holdings"
-    - url: "https://seekeraiapp.com/assets/screenshots/02-risk-gauge.png"
-      alt: "Risk gauge showing concentration, volatility, IL, and liquidation risk scoring"
-    - url: "https://seekeraiapp.com/assets/screenshots/03-ai-copilot.png"
-      alt: "AI Copilot answering questions about portfolio and crypto"
-    - url: "https://seekeraiapp.com/assets/screenshots/04-intel-signals.png"
-      alt: "Intelligence Hub with trade signals, market trends, and protocol security"
+
+  short_description: "AI portfolio analyzer with risk scoring and trade signals for Solana Seeker"
+
+  ## NOTE: Upload these directly in the Publisher Portal UI.
+  ## If using CLI, host at GitHub Pages and update URLs:
+  ## icon_url: "https://warfield2016.github.io/seeker-copilot/assets/icon-512.png"
+  ## banner_url: "https://warfield2016.github.io/seeker-copilot/assets/banner-1200x600.png"
+  ## screenshots uploaded directly in Portal
+
   categories:
     - "Finance"
     - "DeFi"
@@ -82,19 +90,18 @@ app:
   testing_instructions: |
     1. On first launch, accept the disclaimer to proceed.
     2. Tap "Connect Wallet" to connect via Seed Vault (Mobile Wallet Adapter).
-    3. The portfolio screen loads automatically showing token holdings, NFTs, and risk score.
-    4. Tap the wallet address badge at the top to access wallet management (disconnect, add watch wallets).
+    3. The portfolio screen loads showing token holdings, NFTs, and risk score.
+    4. Tap the wallet address badge to access wallet management (disconnect, add watch wallets).
     5. Tap the Allocation pie chart to see individual token allocations with USD values.
-    6. Toggle to Performance to see simulated price chart (real price history requires backend).
-    7. Scroll down to see Holdings (including staked SKR), Collectibles, and Risk Score.
-    8. Navigate to Copilot tab to ask questions about your portfolio or crypto in general.
-    9. Navigate to Intel tab to see AI-generated trade signals, market trends, and protocol security.
-    10. Settings shows SKR Pro tier info, legal documents, and app data management.
-    NOTE: AI features require the backend to be running. The app works in read-only mode without backend.
-    NOTE: The app functions in demo mode on web or without a connected wallet.
+    6. Toggle to Performance to see a simulated chart (clearly labeled "SIMULATED DATA").
+    7. Scroll down to see Holdings (including SKR Staked), Collectibles, and Risk Score.
+    8. Navigate to Copilot tab — ask "What's my biggest risk?" to test AI Q&A (5 free/day).
+    9. Navigate to Intel tab to see AI trade signals, trends, and protocol security scores.
+    10. Settings shows SKR Pro tier info, legal links, and Clear App Data option.
+    NOTE: AI features require the backend at web-production-248e9.up.railway.app.
+    NOTE: The app works in demo mode without a connected wallet.
 
 release:
-  # Generated after running: npx dapp-store create release
   address: ""
   version: "1.0.0"
   version_code: 2
