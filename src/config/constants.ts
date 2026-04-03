@@ -1,6 +1,6 @@
 // App configuration constants
 
-export const APP_NAME = "Seeker AI Copilot";
+export const APP_NAME = "Copilot";
 export const APP_VERSION = "1.0.0";
 
 // Solana configuration — Helius RPC key via env var, never hardcoded
