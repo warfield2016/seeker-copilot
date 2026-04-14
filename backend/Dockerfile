@@ -9,6 +9,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Bust Docker layer cache on every deploy
+ARG DEPLOY_VERSION=0.2.0
 COPY . .
 
 # Drop to non-root
