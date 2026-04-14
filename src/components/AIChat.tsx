@@ -9,46 +9,61 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from "react-native";
 import { AIQuery, Portfolio, UserTier } from "../types";
 import { COLORS } from "../config/constants";
 import aiService from "../services/aiService";
+import * as Haptics from "expo-haptics";
 
 interface Props {
   portfolio: Portfolio | null;
   userTier: UserTier;
+  messages: AIQuery[];
+  onNewMessage: (msg: AIQuery) => void;
+  onClearChat: () => void;
   onQueryUsed: () => void;
 }
 
-export default function AIChat({ portfolio, userTier, onQueryUsed }: Props) {
-  const [messages, setMessages] = useState<AIQuery[]>([]);
+export default function AIChat({ portfolio, userTier, messages, onNewMessage, onClearChat, onQueryUsed }: Props) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
   const canQuery = userTier.queriesRemaining > 0;
 
+  // Build conversation history for backend context (last 3 turns = 6 messages)
+  const getConversationHistory = (): Array<{ role: string; content: string }> => {
+    return messages.slice(0, 6).reverse().flatMap((m) => [
+      { role: "user", content: m.question },
+      { role: "assistant", content: m.response.slice(0, 200) },
+    ]);
+  };
+
   const handleSend = async () => {
     if (!input.trim() || !canQuery || loading) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     const question = input.trim();
     setInput("");
     setLoading(true);
 
     try {
-      const result = await aiService.askQuestion(portfolio, question);
-      setMessages((prev) => [result, ...prev]);
+      const result = await aiService.askQuestion(
+        portfolio,
+        question,
+        getConversationHistory(),
+      );
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      onNewMessage(result);
       onQueryUsed();
     } catch (error) {
-      setMessages((prev) => [
-        {
-          id: Date.now().toString(),
-          question,
-          response: "Something went wrong. Please try again.",
-          timestamp: new Date(),
-          type: "general",
-        },
-        ...prev,
-      ]);
+      onNewMessage({
+        id: Date.now().toString(),
+        question,
+        response: "Something went wrong. Please try again.",
+        timestamp: new Date(),
+        type: "general",
+      });
     } finally {
       setLoading(false);
     }
@@ -57,13 +72,14 @@ export default function AIChat({ portfolio, userTier, onQueryUsed }: Props) {
   const portfolioQuestions = [
     "What's my biggest risk right now?",
     "Should I rebalance my portfolio?",
+    "How can I earn more yield on my holdings?",
     "Analyze my SOL concentration risk",
   ];
 
   const generalQuestions = [
     "What is liquid staking on Solana?",
     "What are the top Solana DeFi protocols?",
-    "Explain impermanent loss simply",
+    "What is Seeker Season 2 and how do I earn rewards?",
     "How does Solana consensus work?",
   ];
 
@@ -80,6 +96,17 @@ export default function AIChat({ portfolio, userTier, onQueryUsed }: Props) {
         <Text style={[styles.queries, userTier.queriesRemaining <= 3 && { color: COLORS.warning }]}>
           {userTier.queriesRemaining}/{userTier.queriesPerDay} queries remaining
         </Text>
+        {messages.length > 0 && (
+          <TouchableOpacity
+            style={styles.clearBtn}
+            onPress={() => Alert.alert("Clear Chat", "Remove all conversation history?", [
+              { text: "Cancel", style: "cancel" },
+              { text: "Clear", style: "destructive", onPress: onClearChat },
+            ])}
+          >
+            <Text style={styles.clearBtnText}>Clear</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {messages.length === 0 && (
@@ -164,11 +191,26 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   header: {
+    flexDirection: "row",
+    justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
+  },
+  clearBtn: {
+    position: "absolute",
+    right: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: COLORS.surfaceLight,
+  },
+  clearBtnText: {
+    color: COLORS.textMuted,
+    fontSize: 11,
+    fontWeight: "600",
   },
   queries: {
     color: COLORS.textSecondary,

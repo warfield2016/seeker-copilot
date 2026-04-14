@@ -87,9 +87,14 @@ class AIService {
   }
 
   /**
-   * Ask a free-form question — portfolio context is optional for general questions
+   * Ask a free-form question — supports conversation history for context continuity.
+   * Portfolio context is optional for general questions.
    */
-  async askQuestion(portfolio: Portfolio | null, question: string): Promise<AIQuery> {
+  async askQuestion(
+    portfolio: Portfolio | null,
+    question: string,
+    conversationHistory?: Array<{ role: string; content: string }>,
+  ): Promise<AIQuery> {
     try {
       const body: Record<string, unknown> = {
         wallet_address: portfolio?.walletAddress ?? "general",
@@ -104,6 +109,10 @@ class AIService {
             usd_value: t.usdValue,
           })),
         };
+      }
+      // Send conversation history for context continuity (last 6 messages)
+      if (conversationHistory && conversationHistory.length > 0) {
+        body.conversation_history = conversationHistory.slice(-6);
       }
       const response = await this.fetchWithRetry(`${this.baseUrl}/api/ai/ask`, {
         method: "POST",

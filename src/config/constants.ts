@@ -1,13 +1,12 @@
 // App configuration constants
 
 export const APP_NAME = "Copilot";
-export const APP_VERSION = "1.0.0";
+export const APP_VERSION = "1.1.0";
 
-// Solana configuration — Helius RPC key via env var, never hardcoded
-// IMPORTANT: Set EXPO_PUBLIC_HELIUS_RPC_URL at build time. Never hardcode API keys.
-export const SOLANA_RPC_ENDPOINT =
-  process.env.EXPO_PUBLIC_HELIUS_RPC_URL ||
-  "https://mainnet.helius-rpc.com/?api-key=YOUR_HELIUS_KEY";
+// Solana configuration — ALL RPC calls go through backend proxy. No Helius key in client.
+// [C2 FIX] Removed EXPO_PUBLIC_HELIUS_RPC_URL — the key was baking into the APK via EXPO_PUBLIC_ prefix.
+// The walletService still needs a basic RPC for getBalance(), so we use public mainnet-beta.
+export const SOLANA_RPC_ENDPOINT = "https://api.mainnet-beta.solana.com";
 export const SOLANA_CLUSTER = "mainnet-beta";
 
 // SKR Token
@@ -28,6 +27,19 @@ export const DISCLAIMER_KEY = "@seeker_copilot_disclaimer_v1";
 // Query limits per day
 export const FREE_QUERIES_PER_DAY = 5;
 export const PRO_QUERIES_PER_DAY = 20;
+
+// ── Monetization: Jupiter Swap Integration ──
+// Jupiter V6 API endpoints (no auth required for basic tier)
+export const JUPITER_QUOTE_API = "https://quote-api.jup.ag/v6";
+// Platform fee in basis points (25 = 0.25%). Phantom uses 85 bps (0.85%).
+// Our 0.25% is 70% cheaper than Phantom, positioning Copilot as the "fair-fee" option.
+export const SWAP_PLATFORM_FEE_BPS = 25;
+// Fee account where platform fees are collected (set via EXPO_PUBLIC_FEE_ACCOUNT at build time).
+// Must be a pre-initialized Associated Token Account owned by the treasury wallet.
+// If not set, platformFeeBps is omitted from quote requests (Jupiter returns no fee).
+export const SWAP_FEE_ACCOUNT = process.env.EXPO_PUBLIC_FEE_ACCOUNT || "";
+// Default slippage tolerance in basis points (50 = 0.5%)
+export const SWAP_DEFAULT_SLIPPAGE_BPS = 50;
 
 // UI — Cyberpunk neon palette
 export const COLORS = {

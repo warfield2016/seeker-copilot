@@ -9,13 +9,30 @@ import {
   TouchableOpacity,
   Platform,
   Linking,
+  Alert,
 } from "react-native";
-import { COLORS } from "../config/constants";
-import { Portfolio, TradeRecommendation, TrendSignal, ProtocolSafety } from "../types";
+import { COLORS, SKR_MINT, SKR_DECIMALS } from "../config/constants";
+import { Portfolio, TradeRecommendation, TrendSignal, ProtocolSafety, SwapParams } from "../types";
 import { DEMO_PORTFOLIO, DEMO_RECOMMENDATIONS, DEMO_TRENDS, DEMO_SECURITY } from "../services/demoData";
 import aiService from "../services/aiService";
 import PortfolioService from "../services/portfolioService";
 import walletService from "../services/walletService";
+import SwapSheet from "../components/SwapSheet";
+
+// Map common symbols → mint addresses for one-tap swap execution
+const SYMBOL_TO_MINT: Record<string, { mint: string; decimals: number }> = {
+  SOL: { mint: "So11111111111111111111111111111111111111112", decimals: 9 },
+  USDC: { mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", decimals: 6 },
+  USDT: { mint: "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB", decimals: 6 },
+  SKR: { mint: SKR_MINT, decimals: SKR_DECIMALS },
+  JUP: { mint: "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN", decimals: 6 },
+  JTO: { mint: "jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL", decimals: 9 },
+  BONK: { mint: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263", decimals: 5 },
+  WIF: { mint: "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm", decimals: 6 },
+  mSOL: { mint: "mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So", decimals: 9 },
+  JitoSOL: { mint: "J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn", decimals: 9 },
+  bSOL: { mint: "bSo13r4TkiE4KumL71LsHTPpL2euBYLFx6h9HP3piy1", decimals: 9 },
+};
 
 const ACTION_COLORS: Record<string, string> = {
   buy: COLORS.success,
@@ -48,6 +65,55 @@ export default function RecommendationsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [agentMeta, setAgentMeta] = useState<{ latency_seconds?: number; agents_run?: number } | null>(null);
+  const [userPortfolio, setUserPortfolio] = useState<Portfolio | null>(null);
+
+  // Swap sheet state — opens when user taps "Swap Now" on a recommendation
+  const [swapSheet, setSwapSheet] = useState<{
+    visible: boolean;
+    inputMint: string; outputMint: string;
+    inputSymbol: string; outputSymbol: string;
+    inputDecimals: number; outputDecimals: number;
+    inputAmount: number;
+  } | null>(null);
+
+  const handleSwapNow = (rec: TradeRecommendation) => {
+    if (!rec.swap_params) {
+      Alert.alert("Not executable", "This recommendation does not include swap parameters.");
+      return;
+    }
+    if (!walletService.isConnected() || !userPortfolio) {
+      Alert.alert("Wallet required", "Please connect your wallet to execute trades.");
+      return;
+    }
+    const params = rec.swap_params;
+    const inMeta = SYMBOL_TO_MINT[params.input_symbol];
+    const outMeta = SYMBOL_TO_MINT[params.output_symbol];
+    if (!inMeta || !outMeta) {
+      Alert.alert("Unsupported token", `Token ${params.input_symbol} or ${params.output_symbol} is not yet supported for in-app swaps.`);
+      return;
+    }
+    // Compute input amount from user's holding * percentage
+    const holding = userPortfolio.tokens.find((t) => t.symbol === params.input_symbol);
+    if (!holding || holding.balance <= 0) {
+      Alert.alert("No balance", `You don't hold any ${params.input_symbol} to swap.`);
+      return;
+    }
+    const amount = holding.balance * (params.input_amount_pct / 100);
+    if (amount <= 0) {
+      Alert.alert("Amount too small", "Suggested swap amount is too small to execute.");
+      return;
+    }
+    setSwapSheet({
+      visible: true,
+      inputMint: inMeta.mint,
+      outputMint: outMeta.mint,
+      inputSymbol: params.input_symbol,
+      outputSymbol: params.output_symbol,
+      inputDecimals: inMeta.decimals,
+      outputDecimals: outMeta.decimals,
+      inputAmount: amount,
+    });
+  };
 
   const fetchAll = useCallback(async () => {
     try {
@@ -59,6 +125,7 @@ export default function RecommendationsScreen() {
           portfolio = await svc.getPortfolio(walletService.getAddress()!);
         } catch { /* fall back to demo */ }
       }
+      setUserPortfolio(portfolio);
       const result = await aiService.getDeepAnalysis(portfolio);
       if (result) {
         setRecs(result.recommendations?.length > 0 ? result.recommendations : DEMO_RECOMMENDATIONS);
@@ -87,12 +154,34 @@ export default function RecommendationsScreen() {
     setRefreshing(false);
   };
 
+  // Animated progress steps for the multi-agent pipeline
+  const [loadStep, setLoadStep] = React.useState(0);
+  const pipelineSteps = [
+    "Analyzing risk factors...",
+    "Scanning market trends...",
+    "Auditing protocol security...",
+    "Generating trade signals...",
+    "Cross-validating results...",
+  ];
+  React.useEffect(() => {
+    if (!loading) return;
+    const interval = setInterval(() => {
+      setLoadStep((s) => Math.min(s + 1, pipelineSteps.length - 1));
+    }, 12000); // ~12s per step = ~60s total visual
+    return () => clearInterval(interval);
+  }, [loading]);
+
   if (loading) {
+    const progress = ((loadStep + 1) / pipelineSteps.length) * 100;
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={styles.loadingText}>Analyzing portfolio...</Text>
-        <Text style={styles.loadingSub}>4 agents · Risk + Trends + Security → Intel</Text>
+        <Text style={styles.loadingText}>{pipelineSteps[loadStep]}</Text>
+        <Text style={styles.loadingSub}>Agent {loadStep + 1} of {pipelineSteps.length}</Text>
+        {/* Progress bar */}
+        <View style={{ width: 200, height: 3, backgroundColor: COLORS.surfaceLight, borderRadius: 2, marginTop: 16 }}>
+          <View style={{ width: `${progress}%` as any, height: 3, backgroundColor: COLORS.primary, borderRadius: 2 }} />
+        </View>
       </View>
     );
   }
@@ -131,6 +220,8 @@ export default function RecommendationsScreen() {
       {/* Signals Tab */}
       {tab === "signals" && recs.map((rec, i) => {
         const color = ACTION_COLORS[rec.action] ?? COLORS.textSecondary;
+        const isExecutable = !!rec.swap_params && !!SYMBOL_TO_MINT[rec.swap_params.input_symbol]
+          && !!SYMBOL_TO_MINT[rec.swap_params.output_symbol];
         return (
           <View key={i} style={styles.card}>
             <View style={styles.cardHeader}>
@@ -144,6 +235,16 @@ export default function RecommendationsScreen() {
               </View>
             </View>
             <Text style={styles.description}>{rec.reason}</Text>
+            {rec.risk_note && (
+              <Text style={styles.riskNote}>⚠ {rec.risk_note}</Text>
+            )}
+            {isExecutable && (
+              <TouchableOpacity style={styles.swapNowBtn} onPress={() => handleSwapNow(rec)} activeOpacity={0.8}>
+                <Text style={styles.swapNowText}>
+                  Swap {rec.swap_params!.input_amount_pct}% {rec.swap_params!.input_symbol} → {rec.swap_params!.output_symbol}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         );
       })}
@@ -252,6 +353,22 @@ export default function RecommendationsScreen() {
       <Text style={styles.disclaimer}>
         Multi-agent AI analysis. Not financial advice. Verify all data independently.
       </Text>
+
+      {/* Swap Sheet — opens when user taps "Swap Now" on an executable recommendation */}
+      {swapSheet && userPortfolio && (
+        <SwapSheet
+          visible={swapSheet.visible}
+          onClose={() => setSwapSheet(null)}
+          inputMint={swapSheet.inputMint}
+          outputMint={swapSheet.outputMint}
+          inputSymbol={swapSheet.inputSymbol}
+          outputSymbol={swapSheet.outputSymbol}
+          inputDecimals={swapSheet.inputDecimals}
+          outputDecimals={swapSheet.outputDecimals}
+          inputAmount={swapSheet.inputAmount}
+          userPublicKey={userPortfolio.walletAddress}
+        />
+      )}
     </ScrollView>
   );
 }
@@ -285,6 +402,20 @@ const styles = StyleSheet.create({
   scoreLabel: { color: COLORS.textSecondary, fontSize: 10 },
   score: { fontSize: 20, fontWeight: "800" },
   description: { color: COLORS.textSecondary, fontSize: 13, lineHeight: 18 },
+  riskNote: { color: COLORS.warning, fontSize: 11, fontStyle: "italic", marginTop: 8 },
+  swapNowBtn: {
+    marginTop: 12,
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    paddingVertical: 11,
+    alignItems: "center",
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  swapNowText: { color: COLORS.text, fontSize: 13, fontWeight: "800", letterSpacing: 0.3 },
   // Trends
   trendTitle: { color: COLORS.text, fontSize: 15, fontWeight: "700", marginBottom: 4 },
   relevanceText: { fontSize: 18, fontWeight: "800", marginLeft: "auto" },

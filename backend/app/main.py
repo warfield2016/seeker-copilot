@@ -108,9 +108,10 @@ async def security_middleware(request: Request, call_next):
     return response
 
 
-from app.routes import ai_routes, proxy_routes
+from app.routes import ai_routes, proxy_routes, metrics_routes
 app.include_router(ai_routes.router, prefix="/api/ai", tags=["AI Analysis"])
 app.include_router(proxy_routes.router, prefix="/api/proxy", tags=["RPC Proxy"])
+app.include_router(metrics_routes.router, prefix="/api/metrics", tags=["Metrics & Revenue"])
 
 
 @app.get("/health")

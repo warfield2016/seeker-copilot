@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { COLORS, APP_NAME } from "../config/constants";
 import walletService from "../services/walletService";
+import * as Haptics from "expo-haptics";
 
 interface Props {
   onConnected: (address: string) => void;
@@ -46,12 +47,15 @@ export default function ConnectScreen({ onConnected }: Props) {
   }, []);
 
   const handleConnect = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setLoading(true);
     setError(null);
     try {
       const address = await walletService.connect();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onConnected(address);
     } catch (err: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setError(err.message ?? "Failed to connect wallet");
     } finally {
       setLoading(false);

@@ -12,6 +12,7 @@ import {
   Modal,
   FlatList,
   TextInput,
+  Linking,
 } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import { COLORS } from "../config/constants";
@@ -27,6 +28,14 @@ import { DEMO_PORTFOLIO, DEMO_RISK, DEMO_SECURITY } from "../services/demoData";
 import { ProtocolSafety } from "../types";
 import aiService from "../services/aiService";
 import { WalletContext } from "../../App";
+import {
+  getEnhancedHistory, toDisplayRows, getNextCursor, groupByDate,
+  truncateAddress, TxDisplayRow, TxDateSection, TX_TYPE_ICONS,
+} from "../services/transactionService";
+import { ActivityIndicator } from "react-native";
+
+const PAGE_SIZE_TX = 25;
+const DEMO_WALLET = "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU";
 
 export default function PortfolioScreen() {
   const { watchAddresses, disconnect, addWatchAddress, removeWatchAddress } = React.useContext(WalletContext);
@@ -45,6 +54,14 @@ export default function PortfolioScreen() {
   const [watchError, setWatchError] = useState("");
   // Track override URIs for images that failed with original URI
   const [imageOverrides, setImageOverrides] = useState<Map<string, string>>(new Map());
+  // Transaction history — collapsible, auto-loads, paginated
+  const [txRows, setTxRows] = useState<TxDisplayRow[]>([]);
+  const [txSections, setTxSections] = useState<TxDateSection[]>([]);
+  const [txLoading, setTxLoading] = useState(false);
+  const [txCursor, setTxCursor] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [selectedTx, setSelectedTx] = useState<TxDisplayRow | null>(null);
+  const [txExpanded, setTxExpanded] = useState(false);
 
   /** Get the best image URI for an NFT, using override if original failed */
   const getNftImageUri = (nft: NFTHolding): string | undefined => {
@@ -126,6 +143,39 @@ export default function PortfolioScreen() {
     return () => { ctrl.aborted = true; refreshCtrl.current.aborted = true; };
   }, [fetchPortfolio]);
 
+  // Auto-load transactions when portfolio wallet is available
+  useEffect(() => {
+    if (!portfolio?.walletAddress || portfolio.walletAddress === "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU") return;
+    let cancelled = false;
+    const loadTxs = async () => {
+      setTxLoading(true);
+      const txs = await getEnhancedHistory(portfolio.walletAddress, { limit: PAGE_SIZE_TX });
+      if (cancelled) return;
+      const rows = toDisplayRows(txs, portfolio.walletAddress);
+      setTxRows(rows);
+      setTxSections(groupByDate(rows));
+      setTxCursor(getNextCursor(txs));
+      setTxLoading(false);
+    };
+    loadTxs();
+    return () => { cancelled = true; };
+  }, [portfolio?.walletAddress]);
+
+  const loadMoreTransactions = useCallback(async () => {
+    if (loadingMore || !txCursor || !portfolio?.walletAddress) return;
+    setLoadingMore(true);
+    const txs = await getEnhancedHistory(portfolio.walletAddress, {
+      limit: PAGE_SIZE_TX,
+      beforeSignature: txCursor,
+    });
+    const newRows = toDisplayRows(txs, portfolio.walletAddress);
+    const allRows = [...txRows, ...newRows];
+    setTxRows(allRows);
+    setTxSections(groupByDate(allRows));
+    setTxCursor(getNextCursor(txs));
+    setLoadingMore(false);
+  }, [loadingMore, txCursor, portfolio?.walletAddress, txRows]);
+
   const onRefresh = useCallback(async () => {
     // Abort any in-flight request before starting new one
     refreshCtrl.current.aborted = true;
@@ -133,6 +183,8 @@ export default function PortfolioScreen() {
     refreshCtrl.current = ctrl;
     setRefreshing(true);
     await fetchPortfolio(ctrl);
+    // Reset transaction state — will re-fetch via useEffect
+    setTxRows([]); setTxSections([]); setTxCursor(null);
     if (!ctrl.aborted) setRefreshing(false);
   }, [fetchPortfolio]);
 
@@ -162,20 +214,26 @@ export default function PortfolioScreen() {
           </Text>
         </Text>
 
-        {/* Wallet address + management toggle */}
+        {/* Wallet address + management toggle — redesigned for visibility */}
         <TouchableOpacity
           style={styles.walletBadge}
           onPress={() => setShowWalletMenu(!showWalletMenu)}
           activeOpacity={0.7}
         >
-          <Text style={styles.walletAddr}>
-            {portfolio.walletAddresses && portfolio.walletAddresses.length > 1
-              ? `Bundled (${portfolio.walletAddresses.length} wallets)`
-              : portfolio.walletAddress && portfolio.walletAddress !== "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU"
-                ? `${portfolio.walletAddress.slice(0, 6)}...${portfolio.walletAddress.slice(-4)}`
-                : "Demo wallet"
-            }
-            {showWalletMenu ? " ▲" : " ▼"}
+          <View style={styles.walletBadgeInner}>
+            <View style={styles.walletDot} />
+            <Text style={styles.walletBadgeAddr}>
+              {portfolio.walletAddresses && portfolio.walletAddresses.length > 1
+                ? `Bundled (${portfolio.walletAddresses.length} wallets)`
+                : portfolio.walletAddress && portfolio.walletAddress !== DEMO_WALLET
+                  ? truncateAddress(portfolio.walletAddress, 6, 4)
+                  : "Demo wallet"
+              }
+            </Text>
+            <Text style={styles.walletChevron}>{showWalletMenu ? "▲" : "▼"}</Text>
+          </View>
+          <Text style={styles.walletManageHint}>
+            {showWalletMenu ? "Tap to close" : "Tap to manage wallets"}
           </Text>
         </TouchableOpacity>
 
@@ -394,6 +452,139 @@ export default function PortfolioScreen() {
         </View>
       </View>
 
+      {/* ── Transaction History — collapsible, compact, date-grouped ── */}
+      <View style={styles.activitySection}>
+        <TouchableOpacity
+          style={styles.activityHeaderRow}
+          onPress={() => setTxExpanded(!txExpanded)}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.activityIcon}>⟐</Text>
+          <Text style={styles.activityTitle}>Transaction History</Text>
+          {txRows.length > 0 && (
+            <View style={styles.activityCountBadge}>
+              <Text style={styles.activityCountText}>{txRows.length}</Text>
+            </View>
+          )}
+          <Text style={styles.activityChevron}>{txExpanded ? "▲" : "▼"}</Text>
+        </TouchableOpacity>
+
+        {txExpanded && (
+          <View style={styles.activityListCard}>
+            {txLoading ? (
+              <View style={styles.activityLoading}>
+                <ActivityIndicator size="small" color={COLORS.primary} />
+                <Text style={styles.activityLoadingText}>Loading...</Text>
+              </View>
+            ) : txSections.length === 0 ? (
+              <View style={styles.activityEmpty}>
+                <Text style={styles.activityEmptyText}>No transactions yet</Text>
+              </View>
+            ) : (
+              <>
+                {txSections.filter((s) => s.data.length > 0).map((section) => (
+                  <View key={section.title}>
+                    <View style={styles.dateSectionHeader}>
+                      <Text style={styles.dateSectionText}>{section.title}</Text>
+                    </View>
+                    {section.data.map((tx) => (
+                      <TouchableOpacity
+                        key={tx.signature}
+                        style={styles.txRow}
+                        onPress={() => setSelectedTx(tx)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={[styles.txIconCircle, { backgroundColor: tx.typeColor + "22" }]}>
+                          <Text style={[styles.txIconText, { color: tx.typeColor }]}>{tx.typeIcon}</Text>
+                        </View>
+                        <View style={styles.txDetails}>
+                          <Text style={styles.txPrimary} numberOfLines={1}>
+                            {tx.type === "SWAP" && tx.swapInSymbol && tx.swapOutSymbol
+                              ? `${tx.swapInSymbol} → ${tx.swapOutSymbol}`
+                              : tx.typeLabel}
+                          </Text>
+                          <Text style={styles.txSecondary} numberOfLines={1}>
+                            {tx.sourceLabel !== tx.source ? `${tx.sourceLabel} · ` : ""}{tx.time}
+                          </Text>
+                        </View>
+                        <View style={styles.txAmountCol}>
+                          {tx.type === "SWAP" && tx.swapInAmount ? (
+                            <Text style={[styles.txAmountLine, { color: "#00F0FF" }]} numberOfLines={1}>
+                              {tx.swapInAmount} → {tx.swapOutAmount}
+                            </Text>
+                          ) : tx.amountDisplay ? (
+                            <Text style={[styles.txAmountLine, { color: tx.amountColor ?? COLORS.textSecondary }]} numberOfLines={1}>
+                              {tx.amountDisplay}
+                            </Text>
+                          ) : null}
+                        </View>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                ))}
+                {txCursor && (
+                  <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMoreTransactions} activeOpacity={0.7} disabled={loadingMore}>
+                    {loadingMore ? <ActivityIndicator size="small" color={COLORS.primary} /> : <Text style={styles.loadMoreText}>Load More</Text>}
+                  </TouchableOpacity>
+                )}
+              </>
+            )}
+          </View>
+        )}
+      </View>
+
+      {/* ── Transaction Detail Bottom Sheet ── */}
+      <Modal visible={!!selectedTx} animationType="slide" transparent statusBarTranslucent>
+        <TouchableOpacity style={styles.txDetailBackdrop} activeOpacity={1} onPress={() => setSelectedTx(null)}>
+          <View style={styles.txDetailSheet} onStartShouldSetResponder={() => true}>
+            <View style={styles.txDetailHandle} />
+            {selectedTx && (
+              <>
+                <View style={styles.txDetailIconRow}>
+                  <View style={[styles.txDetailIconBig, { backgroundColor: selectedTx.typeColor + "22" }]}>
+                    <Text style={[styles.txDetailIconText, { color: selectedTx.typeColor }]}>{selectedTx.typeIcon}</Text>
+                  </View>
+                  <Text style={styles.txDetailType}>{selectedTx.typeLabel}</Text>
+                </View>
+
+                {/* Swap visual: token → token */}
+                {selectedTx.type === "SWAP" && selectedTx.swapInAmount && (
+                  <View style={styles.txSwapVisual}>
+                    <View style={styles.txSwapSide}>
+                      <Text style={styles.txSwapAmount}>{selectedTx.swapInAmount}</Text>
+                      <Text style={styles.txSwapSymbol}>{selectedTx.swapInSymbol}</Text>
+                    </View>
+                    <Text style={styles.txSwapArrow}>→</Text>
+                    <View style={styles.txSwapSide}>
+                      <Text style={styles.txSwapAmount}>{selectedTx.swapOutAmount}</Text>
+                      <Text style={styles.txSwapSymbol}>{selectedTx.swapOutSymbol}</Text>
+                    </View>
+                  </View>
+                )}
+
+                {/* Meta grid */}
+                <View style={styles.txMetaGrid}>
+                  <View style={styles.txMetaRow}><Text style={styles.txMetaLabel}>Date</Text><Text style={styles.txMetaValue}>{selectedTx.date} {selectedTx.time}</Text></View>
+                  <View style={styles.txMetaRow}><Text style={styles.txMetaLabel}>Source</Text><Text style={styles.txMetaValue}>{selectedTx.sourceLabel}</Text></View>
+                  <View style={styles.txMetaRow}><Text style={styles.txMetaLabel}>Fee</Text><Text style={styles.txMetaValue}>{selectedTx.feeSol.toFixed(6)} SOL</Text></View>
+                  {selectedTx.counterparty && (
+                    <View style={styles.txMetaRow}><Text style={styles.txMetaLabel}>Counterparty</Text><Text style={[styles.txMetaValue, { fontFamily: "Courier" }]}>{selectedTx.counterparty}</Text></View>
+                  )}
+                  <View style={styles.txMetaRow}><Text style={styles.txMetaLabel}>Signature</Text><Text style={[styles.txMetaValue, { fontFamily: "Courier" }]}>{truncateAddress(selectedTx.signature, 8, 8)}</Text></View>
+                </View>
+
+                <TouchableOpacity style={styles.txDetailExplorerBtn} onPress={() => { Linking.openURL(selectedTx.explorerUrl); setSelectedTx(null); }}>
+                  <Text style={styles.txDetailExplorerText}>View on Solscan</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.txDetailCloseBtn} onPress={() => setSelectedTx(null)}>
+                  <Text style={styles.txDetailCloseText}>Close</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
       {/* Collectibles — spam filtered with reveal button */}
       {portfolio.nfts.length > 0 && (() => {
         const verifiedNfts = portfolio.nfts.filter((n) => !n.isSpam);
@@ -549,11 +740,43 @@ const styles = StyleSheet.create({
   totalValue: { color: COLORS.text, fontSize: 34, fontWeight: "800", letterSpacing: -1 },
   change: { fontSize: 15, fontWeight: "600", marginTop: 6 },
   walletBadge: {
-    marginTop: 8,
-    backgroundColor: COLORS.surfaceLight,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    marginTop: 12,
+    backgroundColor: COLORS.surface,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: COLORS.glow,
+    alignItems: "center",
+    width: "100%",
+  },
+  walletBadgeInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    width: "100%",
+  },
+  walletDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.success,
+  },
+  walletBadgeAddr: {
+    color: COLORS.text,
+    fontSize: 14,
+    fontWeight: "600",
+    fontFamily: "Courier",
+    flex: 1,
+  },
+  walletChevron: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+  },
+  walletManageHint: {
+    color: COLORS.textMuted,
+    fontSize: 10,
+    marginTop: 4,
   },
   summaryCard: {
     backgroundColor: COLORS.surface,
@@ -865,4 +1088,51 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "600",
   },
+  // ── Transaction History (compact for Seeker 6.36" screen) ──
+  activitySection: { marginTop: 16, paddingHorizontal: 16 },
+  activityHeaderRow: { flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 6, paddingVertical: 6 },
+  activityIcon: { color: COLORS.accent, fontSize: 14, fontWeight: "800" },
+  activityTitle: { color: COLORS.text, fontSize: 13, fontWeight: "700", flex: 1 },
+  activityCountBadge: { backgroundColor: COLORS.primary + "33", borderRadius: 8, paddingHorizontal: 6, paddingVertical: 1, minWidth: 24, alignItems: "center" },
+  activityCountText: { color: COLORS.primary, fontSize: 10, fontWeight: "800" },
+  activityChevron: { color: COLORS.textMuted, fontSize: 10, marginLeft: 4 },
+  activityListCard: { backgroundColor: COLORS.surface, borderRadius: 10, overflow: "hidden", borderWidth: 1, borderColor: COLORS.glow },
+  activityLoading: { paddingVertical: 20, alignItems: "center", gap: 6 },
+  activityLoadingText: { color: COLORS.textSecondary, fontSize: 11 },
+  activityEmpty: { paddingVertical: 24, alignItems: "center", gap: 4 },
+  activityEmptyText: { color: COLORS.textMuted, fontSize: 12 },
+  dateSectionHeader: { backgroundColor: COLORS.surfaceLight, paddingHorizontal: 12, paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+  dateSectionText: { color: COLORS.textMuted, fontSize: 10, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.4 },
+  txRow: { flexDirection: "row", alignItems: "center", paddingVertical: 8, paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: COLORS.border, gap: 8 },
+  txIconCircle: { width: 32, height: 32, borderRadius: 16, justifyContent: "center", alignItems: "center" },
+  txIconText: { fontSize: 13, fontWeight: "800" },
+  txDetails: { flex: 1 },
+  txPrimary: { color: COLORS.text, fontSize: 12, fontWeight: "600" },
+  txSecondary: { color: COLORS.textMuted, fontSize: 10, marginTop: 1 },
+  txAmountCol: { alignItems: "flex-end", maxWidth: 110 },
+  txAmountLine: { fontSize: 11, fontWeight: "700", textAlign: "right" },
+  txAmountSub: { fontSize: 10, fontWeight: "600", marginTop: 1, textAlign: "right" },
+  loadMoreBtn: { paddingVertical: 10, alignItems: "center", borderTopWidth: 1, borderTopColor: COLORS.border },
+  loadMoreText: { color: COLORS.primary, fontSize: 12, fontWeight: "700" },
+  // ── Transaction Detail Bottom Sheet ──
+  txDetailBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "flex-end" },
+  txDetailSheet: { backgroundColor: COLORS.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 40, borderWidth: 1, borderColor: COLORS.glow, borderBottomWidth: 0, maxHeight: "70%" },
+  txDetailHandle: { width: 40, height: 4, backgroundColor: COLORS.textMuted, borderRadius: 2, alignSelf: "center", marginBottom: 16 },
+  txDetailIconRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 },
+  txDetailIconBig: { width: 48, height: 48, borderRadius: 24, justifyContent: "center", alignItems: "center" },
+  txDetailIconText: { fontSize: 20, fontWeight: "800" },
+  txDetailType: { color: COLORS.text, fontSize: 20, fontWeight: "800" },
+  txSwapVisual: { flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: COLORS.surfaceLight, borderRadius: 12, padding: 16, marginBottom: 16, gap: 16 },
+  txSwapSide: { alignItems: "center" },
+  txSwapAmount: { color: COLORS.text, fontSize: 20, fontWeight: "800" },
+  txSwapSymbol: { color: COLORS.textSecondary, fontSize: 12, fontWeight: "600", marginTop: 2 },
+  txSwapArrow: { color: COLORS.accent, fontSize: 20, fontWeight: "800" },
+  txMetaGrid: { marginBottom: 16 },
+  txMetaRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+  txMetaLabel: { color: COLORS.textMuted, fontSize: 12, fontWeight: "600" },
+  txMetaValue: { color: COLORS.text, fontSize: 12, fontWeight: "600", textAlign: "right", maxWidth: "60%" },
+  txDetailExplorerBtn: { backgroundColor: COLORS.primary + "22", borderRadius: 12, paddingVertical: 14, alignItems: "center", marginBottom: 8, borderWidth: 1, borderColor: COLORS.primary + "44" },
+  txDetailExplorerText: { color: COLORS.primary, fontSize: 14, fontWeight: "700" },
+  txDetailCloseBtn: { paddingVertical: 12, alignItems: "center" },
+  txDetailCloseText: { color: COLORS.textSecondary, fontSize: 14, fontWeight: "600" },
 });

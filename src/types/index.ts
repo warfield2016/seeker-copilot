@@ -84,11 +84,23 @@ export interface RiskScore {
   details: string;
 }
 
+export interface SwapParams {
+  input_symbol: string;
+  output_symbol: string;
+  /** Percentage of the user's current input holding to swap (10, 25, 50, 100) */
+  input_amount_pct: number;
+}
+
 export interface TradeRecommendation {
-  action: "buy" | "sell" | "hold" | "rebalance";
+  action: "buy" | "sell" | "hold" | "rebalance" | "stake" | "unstake";
   token: string;
   reason: string;
   confidence: number; // 0-100
+  priority?: number;
+  venue?: string;
+  risk_note?: string | null;
+  /** Present when the recommendation is executable via Jupiter (buy/sell/rebalance) */
+  swap_params?: SwapParams | null;
   suggestedSize?: number;
   suggestedEntry?: number;
   stopLoss?: number;
