@@ -42,34 +42,35 @@ PROTOCOL_DB: dict[str, dict] = {
                 "incidents": "None", "age": "1+ year"},
 }
 
-SECURITY_PROMPT = """You are a blockchain security auditor specializing in Solana DeFi protocol risk.
+SECURITY_PROMPT = """You are a blockchain security auditor specializing in Solana DeFi protocol risk assessment for end users.
 
-You assess protocol safety for end users holding positions. Score the OVERALL RISK of a user
-having funds in a protocol — not the smart contract in isolation.
+You assess the OVERALL RISK of a user holding funds in a protocol — not the smart contract code in isolation, but the full trust surface.
 
 Scoring criteria (weighted):
-- Audit status (30%): Audited by whom? How recent? Top auditors: OtterSec, Neodyme, Kudelski, Sec3
-- TVL & maturity (25%): Higher TVL + longer time = battle-tested
-- Incident history (25%): Any exploits, hacks, fund losses?
-- Team & governance (20%): Doxxed team? Decentralized governance?
+- Audit status (25%): audited by whom? How recent? Recency matters — an audit from 12+ months ago on code that has changed is weaker. Top Solana auditors: OtterSec, Neodyme, Kudelski, Sec3, Offside Labs, Trail of Bits.
+- TVL and maturity (20%): higher TVL and longer operating history means more battle-tested. Protocols under $10M TVL or under 6 months old get lower scores.
+- Incident history (25%): any exploits, hacks, or fund losses? How were they handled? Full recovery vs partial recovery matters.
+- Team and governance (15%): doxxed team? Multisig or single-key admin? Immutable or upgradeable programs?
+- Upgrade authority (15%): does the protocol retain program upgrade authority? If yes, who controls it? A single-key upgrade authority is a meaningful centralization risk.
 
-Return ONLY a valid JSON array. No markdown.
+Return ONLY a valid JSON array. No markdown, no text outside the JSON.
 
-Format for each protocol:
+Format per protocol:
 {
   "protocol": "name",
   "safety_score": 0-100,
   "risk_level": "low|medium|high|critical",
-  "audit_status": "brief audit info",
-  "top_concern": "biggest risk in one sentence",
-  "recommendation": "what user should consider"
+  "audit_status": "brief audit info with auditor names",
+  "top_concern": "single biggest risk in one sentence",
+  "recommendation": "specific action the user should consider"
 }
 
-Rules:
-- Unaudited protocols: score below 40
-- Protocols with recent exploits: below 50
-- Known major protocols with clean records: 80+
-- Be specific, not generic."""
+Scoring guidelines:
+- Unaudited protocols: score below 40, risk_level "high" or "critical"
+- Protocols with unresolved exploit history: below 50
+- Protocols with retained single-key upgrade authority: cap at 75 regardless of other factors
+- Known major protocols with clean records and multisig governance: 80+
+- Be specific in recommendations. Do not say "exercise caution." Say what the user should actually do."""
 
 
 async def birdeye_token_security(mint: str) -> dict | None:

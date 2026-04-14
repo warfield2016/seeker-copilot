@@ -103,8 +103,38 @@ def parse_json_from_llm(content: str, fallback=None):
     return fallback
 
 
+# --- Canary detection: check if LLM leaked system prompt fragments ---
+_CANARY_PHRASES = [
+    "powering seeker copilot",
+    "bloomberg terminal",
+    "quantitative risk analyst for solana",
+    "trade strategist generating actionable",
+    "blockchain security auditor specializing",
+    "trend researcher with deep market",
+]
+
+
+def _check_prompt_leak(response: str) -> bool:
+    """Return True if response contains system prompt fragments (potential injection success)."""
+    response_lower = response.lower()
+    return any(phrase in response_lower for phrase in _CANARY_PHRASES)
+
+
+def sanitize_llm_output(text: str) -> str:
+    """Sanitize LLM output before sending to client.
+    Strips URLs (AI should not link users) and wallet-address-like strings
+    (prevents address substitution attacks via poisoned token names)."""
+    # Strip URLs — AI responses should not contain clickable links
+    text = re.sub(r'https?://[^\s<>"]+', '[link removed]', text)
+    # Strip potential wallet addresses (43-44 char base58 strings)
+    # but preserve short strings that happen to be base58 (token symbols, etc.)
+    text = re.sub(r'(?<!\w)[1-9A-HJ-NP-Za-km-z]{43,44}(?!\w)', '[address removed]', text)
+    return text
+
+
 async def invoke_agent(system_prompt: str, user_prompt: str, timeout: float = 30.0, retries: int = 2) -> str:
-    """Invoke LLM with system + user message. Retries on transient errors."""
+    """Invoke LLM with system + user message. Retries on transient errors.
+    Applies output sanitization and canary leak detection."""
     import asyncio
     llm = get_llm()
     messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]
@@ -112,7 +142,15 @@ async def invoke_agent(system_prompt: str, user_prompt: str, timeout: float = 30
     for attempt in range(retries):
         try:
             response = await asyncio.wait_for(llm.ainvoke(messages), timeout=timeout)
-            return response.content
+            content = response.content
+
+            # Check for prompt leak (injection attack may have succeeded)
+            if _check_prompt_leak(content):
+                logger.warning("Canary detected: LLM may have leaked system prompt")
+                return "I can help you analyze your Solana portfolio. What would you like to know about your holdings?"
+
+            # Sanitize output (strip URLs, wallet addresses)
+            return sanitize_llm_output(content)
         except asyncio.TimeoutError:
             last_error = TimeoutError(f"LLM timed out after {timeout}s (attempt {attempt + 1})")
             logger.warning(f"LLM timeout attempt {attempt + 1}/{retries}")

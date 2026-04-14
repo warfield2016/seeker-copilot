@@ -1,64 +1,38 @@
 """
 Portfolio Analyst Agent
 LangChain-powered AI agent for Solana portfolio analysis.
+
+[C4 FIX] Uses centralized get_llm singleton from base.py instead of creating
+duplicate LLM instances per import (which leaked connections and memory).
 """
-import os
 import json
 import logging
-import re
 from langchain_core.messages import SystemMessage, HumanMessage
+from app.agents.base import get_llm, sanitize_input
 
 logger = logging.getLogger(__name__)
 
 
-def get_llm():
-    """Initialize the LLM based on environment configuration."""
-    provider = os.getenv("LLM_PROVIDER", "groq")
-    model = os.getenv("LLM_MODEL", "")
-
-    if provider == "groq":
-        api_key = os.getenv("GROQ_API_KEY")
-        if not api_key:
-            raise ValueError("GROQ_API_KEY environment variable is required")
-        from langchain_groq import ChatGroq
-        return ChatGroq(model=model or "llama-3.3-70b-versatile", temperature=0.3, max_tokens=1024)
-    elif provider == "anthropic":
-        api_key = os.getenv("ANTHROPIC_API_KEY")
-        if not api_key:
-            raise ValueError("ANTHROPIC_API_KEY environment variable is required")
-        from langchain_anthropic import ChatAnthropic
-        return ChatAnthropic(model=model or "claude-sonnet-4-20250514", temperature=0.3, max_tokens=1024)
-    elif provider == "openai":
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise ValueError("OPENAI_API_KEY environment variable is required")
-        from langchain_openai import ChatOpenAI
-        return ChatOpenAI(model=model or "gpt-4o", temperature=0.3, max_tokens=1024)
-    else:
-        raise ValueError(f"Unsupported LLM provider: {provider}. Use: groq, anthropic, or openai")
-
-
-SYSTEM_PROMPT = """You are a sharp, concise Solana portfolio analyst in the Seeker AI Copilot app.
+SYSTEM_PROMPT = """You are a Solana portfolio analyst powering Seeker Copilot on the Solana Seeker phone.
 
 Rules:
-- MAX 80 words per response. No exceptions.
-- Plain text only. No markdown, no asterisks, no bullet symbols.
-- One short paragraph per topic. Separate with a blank line.
+- MAX 120 words per response.
+- Plain text only. No markdown, no asterisks, no bullet symbols, no emoji.
 - Lead with the single most important number or insight.
-- Use $ amounts. Skip percentages when the dollar amount is clearer.
-- Only flag risks that actually matter right now.
-- Sound confident and direct, like a Bloomberg terminal notification.
+- Use $ amounts and % changes. Be specific with numbers.
+- Flag concentration risk if any single token exceeds 40% of portfolio.
+- SOL-denominated LSTs (mSOL, JitoSOL, bSOL) are correlated with SOL — do not treat as diversification.
+- Sound direct and analytical, like a Bloomberg terminal notification.
 - Never say "not financial advice" — the app UI handles disclaimers.
-- Only discuss the user's portfolio and Solana DeFi. Redirect off-topic questions.
+- For portfolio questions: reference specific holdings by name and value.
+- For general crypto questions: give a brief factual answer.
+- For off-topic questions: reply "I specialize in Solana portfolio intelligence."
 """
 
 
 def _sanitize_user_input(text: str) -> str:
-    """Basic input sanitization to reduce prompt injection risk."""
-    # Remove common injection patterns
-    text = re.sub(r"(?i)(ignore|forget|disregard)\s+(all\s+)?(previous|above|prior)\s+(instructions?|prompts?|rules?)", "[filtered]", text)
-    # Truncate to reasonable length
-    return text[:500]
+    """Delegates to centralized sanitize_input with 8 injection patterns + Unicode normalization."""
+    return sanitize_input(text, max_length=500)
 
 
 class PortfolioAnalyst:

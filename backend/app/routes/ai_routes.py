@@ -1,6 +1,9 @@
 """
 AI Analysis API Routes
 Multi-agent orchestrated portfolio intelligence.
+
+Security: Pydantic models enforce max array sizes, wallet address format,
+and input length limits to prevent LLM cost amplification.
 """
 import uuid
 import logging
@@ -17,8 +20,11 @@ orchestrator = Orchestrator()
 LLM_TIMEOUT_SECONDS = 45
 DEEP_ANALYSIS_TIMEOUT = 90  # longer for multi-agent pipeline
 
+# Solana base58 address pattern (32-44 chars, base58 alphabet)
+SOLANA_ADDR_PATTERN = r'^[1-9A-HJ-NP-Za-km-z]{32,44}$'
 
-# --- Request Models ---
+
+# --- Request Models (with security limits) ---
 
 class TokenInfo(BaseModel):
     symbol: str = Field(min_length=1, max_length=20)
@@ -37,32 +43,41 @@ class DeFiPositionInfo(BaseModel):
     health: Optional[float] = None
 
 
+class ConversationMessage(BaseModel):
+    """A single message in conversation history for context continuity."""
+    role: str = Field(pattern=r'^(user|assistant)$')
+    content: str = Field(min_length=1, max_length=500)
+
+
 class PortfolioSummaryRequest(BaseModel):
-    wallet_address: str = Field(min_length=32, max_length=64)
+    wallet_address: str = Field(min_length=32, max_length=44, pattern=SOLANA_ADDR_PATTERN)
     total_value_usd: float = Field(ge=0)
     change_24h_percent: float
-    tokens: list[TokenInfo] = Field(min_length=1)
-    defi_positions: list[DeFiPositionInfo] = []
+    tokens: list[TokenInfo] = Field(min_length=1, max_length=50)  # [C3] Cap at 50 tokens
+    defi_positions: list[DeFiPositionInfo] = Field(default=[], max_length=20)  # [C3] Cap at 20
     skr_balance: float = 0
     skr_staked: float = 0
 
 
 class AskQuestionRequest(BaseModel):
-    wallet_address: str = Field(min_length=1, max_length=64)  # "general" for guest mode
+    wallet_address: str = Field(min_length=1, max_length=44)  # "general" for guest mode
     question: str = Field(min_length=1, max_length=500)
     portfolio_summary: Optional[dict] = None
+    conversation_history: Optional[list[ConversationMessage]] = Field(default=None, max_length=6)
+    recent_transactions: Optional[list[dict]] = Field(default=None, max_length=20)
+    nft_summary: Optional[list[dict]] = Field(default=None, max_length=10)
 
 
 class RecommendationRequest(BaseModel):
-    wallet_address: str = Field(min_length=32, max_length=64)
-    tokens: list[TokenInfo] = Field(min_length=1)
-    defi_positions: list[DeFiPositionInfo] = []
+    wallet_address: str = Field(min_length=32, max_length=44, pattern=SOLANA_ADDR_PATTERN)
+    tokens: list[TokenInfo] = Field(min_length=1, max_length=50)
+    defi_positions: list[DeFiPositionInfo] = Field(default=[], max_length=20)
 
 
 class DeepAnalysisRequest(BaseModel):
-    wallet_address: str = Field(min_length=32, max_length=64)
-    tokens: list[TokenInfo] = Field(min_length=1)
-    defi_positions: list[DeFiPositionInfo] = []
+    wallet_address: str = Field(min_length=32, max_length=44, pattern=SOLANA_ADDR_PATTERN)
+    tokens: list[TokenInfo] = Field(min_length=1, max_length=50)
+    defi_positions: list[DeFiPositionInfo] = Field(default=[], max_length=20)
 
 
 # --- Routes ---
@@ -95,19 +110,22 @@ async def get_portfolio_summary(request: PortfolioSummaryRequest):
 
 @router.post("/ask")
 async def ask_question(request: AskQuestionRequest):
-    """Answer a free-form question about the user's portfolio."""
+    """Answer a free-form question — supports conversation history + tx/NFT context."""
     try:
         response = await asyncio.wait_for(
             orchestrator.answer_question(
                 question=request.question,
                 portfolio=request.portfolio_summary,
+                conversation_history=[m.model_dump() for m in request.conversation_history] if request.conversation_history else None,
+                recent_transactions=request.recent_transactions,
+                nft_summary=request.nft_summary,
             ),
             timeout=LLM_TIMEOUT_SECONDS,
         )
         return {
             "id": f"q_{uuid.uuid4().hex[:12]}",
             "response": response,
-            "type": "general",
+            "type": "portfolio" if request.portfolio_summary else "general",
         }
     except asyncio.TimeoutError:
         logger.error("LLM timeout on /ask")
